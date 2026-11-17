@@ -1,7 +1,9 @@
-# BankingApp — iOS SwiftUI base
+# TingTing — iOS SwiftUI base
 
-Base project cho app ngân hàng: **SwiftUI + MVVM + Clean Architecture**, chia theo **feature**.
-Màn hình đầu tiên là Đăng nhập kèm drawer "Tiện ích" trượt từ bên trái.
+Base project cho app học tiếng Trung **TingTing**: **SwiftUI + MVVM + Clean Architecture**, chia theo **feature**.
+Màn hình đầu tiên là Đăng nhập (mật khẩu hoặc khuôn mặt/vân tay) kèm drawer "Học thử" trượt từ bên trái.
+
+> Target trong Xcode vẫn tên `BankingApp` (tên hiển thị trên máy là TingTing). Có thể đổi tên target sau.
 
 ## Yêu cầu
 
@@ -24,7 +26,7 @@ open BankingApp.xcodeproj
 ```
 
 Cấu hình **Debug** dùng mock API (`USE_MOCK_API = YES`): mọi tên đăng nhập, mật khẩu `123456`.
-Sau lần đăng nhập đầu, nút Face ID sẽ dùng được (refresh token lưu trong Keychain).
+Sau lần đăng nhập đầu, nút đăng nhập bằng khuôn mặt/vân tay sẽ dùng được (refresh token lưu trong Keychain).
 Đổi URL API trong `project.yml` → `settings.configs`.
 
 ## Thư viện (Swift Package Manager)
@@ -73,7 +75,7 @@ BankingApp/
 │   │   ├── Data/             # DTOs, AuthEndpoint, Remote/Local DataSource, AuthRepositoryImpl
 │   │   ├── Presentation/Login/
 │   │   └── DI/
-│   ├── Utilities/            # Drawer tiện ích không cần đăng nhập (cùng cấu trúc)
+│   ├── Utilities/            # Drawer "Học thử": từ điển, pinyin, thanh điệu, viết chữ, bộ thủ, HSK
 │   └── Home/                 # Màn hình sau đăng nhập (placeholder)
 └── Resources/                # Assets, Info.plist (XcodeGen sinh)
 BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
@@ -90,9 +92,9 @@ BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
 
 ## Việc còn để giữ chỗ (TODO)
 
-- Logo, App Icon, tên ngân hàng thật
-- Số tổng đài (`AppConfig.supportHotline`)
-- Luồng Quên mật khẩu, Mở tài khoản, chi tiết từng tiện ích
+- Logo, App Icon thật
+- Email hỗ trợ (`AppConfig.supportEmail`), link Điều khoản / Quyền riêng tư
+- Luồng Quên mật khẩu, Đăng ký, màn hình từng công cụ học thử
 - Đa ngôn ngữ: chuỗi đang viết thẳng tiếng Việt, nên chuyển sang `Localizable.xcstrings`
 - Refresh token tự động khi 401 (mở rộng `AuthInterceptor.retry`)
-- SSL pinning (Alamofire `ServerTrustManager`) và phát hiện jailbreak trước khi lên production
+- Đăng nhập Apple / Google (chưa làm)

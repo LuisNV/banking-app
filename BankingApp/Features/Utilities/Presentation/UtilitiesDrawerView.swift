@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Nội dung drawer bên trái: tiện ích dùng được khi chưa đăng nhập.
+/// Nội dung drawer bên trái: các công cụ học thử dùng được khi chưa đăng nhập.
 struct UtilitiesDrawerView: View {
     let viewModel: UtilitiesViewModel
     let topInset: CGFloat
@@ -31,7 +31,7 @@ struct UtilitiesDrawerView: View {
             HStack {
                 HStack(spacing: 10) {
                     BrandLogo(size: 36, style: .onBrand)
-                    Text("Ngân hàng Số")
+                    Text("TingTing")
                         .font(.headline)
                         .foregroundStyle(.white)
                 }
@@ -46,7 +46,7 @@ struct UtilitiesDrawerView: View {
                 )
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("Tiện ích")
+                Text("Học thử")
                     .font(.title2.bold())
                     .foregroundStyle(.white)
                 Text("Dùng ngay, không cần đăng nhập")
@@ -82,28 +82,28 @@ struct UtilitiesDrawerView: View {
 
     private func supportSection(_ support: SupportContact) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("HỖ TRỢ KHÁCH HÀNG")
+            Text("HỖ TRỢ")
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(AppColor.textSecondary)
                 .padding(.leading, 12)
 
             HStack(spacing: 12) {
-                IconTile(systemImage: "phone.fill", tint: Color(.systemGreen))
+                IconTile(systemImage: "bubble.left.fill", tint: Color(.systemGreen))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(support.title).font(.body.weight(.semibold))
-                    Text(support.hotline).font(.footnote).foregroundStyle(AppColor.textSecondary)
+                    Text(support.email).font(.footnote).foregroundStyle(AppColor.textSecondary)
                 }
                 Spacer()
-                if let url = support.phoneURL {
+                if let url = support.mailURL {
                     Link(destination: url) {
-                        Text("Gọi")
+                        Text("Gửi")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 14)
                             .frame(height: 34)
                             .background(AppColor.brand, in: Capsule())
                     }
-                    .accessibilityLabel("Gọi \(support.title)")
+                    .accessibilityLabel("Gửi email \(support.title)")
                 }
             }
             .padding(12)

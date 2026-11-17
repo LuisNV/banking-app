@@ -11,16 +11,16 @@ final class UtilitiesRepositoryImpl: UtilitiesRepository {
 
     func publicUtilities() async throws -> [UtilityItem] {
         [
-            UtilityItem(id: "qr", kind: .qrPayment, title: "Quét QR thanh toán"),
-            UtilityItem(id: "fx", kind: .exchangeRate, title: "Tỷ giá ngoại tệ"),
-            UtilityItem(id: "rate", kind: .savingsRate, title: "Lãi suất tiết kiệm"),
-            UtilityItem(id: "atm", kind: .atmLocator, title: "ATM & chi nhánh"),
-            UtilityItem(id: "promo", kind: .promotions, title: "Ưu đãi"),
-            UtilityItem(id: "loan", kind: .loanCalculator, title: "Tính khoản vay"),
+            UtilityItem(id: "dict", kind: .dictionary, title: "Tra từ điển"),
+            UtilityItem(id: "pinyin", kind: .pinyinChart, title: "Bảng phiên âm Pinyin"),
+            UtilityItem(id: "tone", kind: .tonePractice, title: "Luyện thanh điệu"),
+            UtilityItem(id: "write", kind: .handwriting, title: "Tập viết chữ Hán"),
+            UtilityItem(id: "radical", kind: .radicals, title: "Bộ thủ"),
+            UtilityItem(id: "hsk", kind: .hskVocabulary, title: "Từ vựng HSK"),
         ]
     }
 
     func supportContact() -> SupportContact {
-        SupportContact(title: "Tổng đài 24/7", hotline: config.supportHotline)
+        SupportContact(title: "Góp ý & hỗ trợ", email: config.supportEmail)
     }
 }

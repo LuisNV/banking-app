@@ -1,13 +1,13 @@
 import Foundation
 
-/// Loại tiện ích. Domain chỉ giữ loại; icon/màu do Presentation quyết định.
+/// Loại tiện ích học thử. Domain chỉ giữ loại; icon/màu do Presentation quyết định.
 enum UtilityKind: String, CaseIterable {
-    case qrPayment
-    case exchangeRate
-    case savingsRate
-    case atmLocator
-    case promotions
-    case loanCalculator
+    case dictionary
+    case pinyinChart
+    case tonePractice
+    case handwriting
+    case radicals
+    case hskVocabulary
 }
 
 struct UtilityItem: Identifiable, Equatable, Hashable {
@@ -18,9 +18,9 @@ struct UtilityItem: Identifiable, Equatable, Hashable {
 
 struct SupportContact: Equatable {
     let title: String
-    let hotline: String
+    let email: String
 
-    var phoneURL: URL? {
-        URL(string: "tel:\(hotline.filter(\.isNumber))")
+    var mailURL: URL? {
+        URL(string: "mailto:\(email)")
     }
 }

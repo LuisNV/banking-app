@@ -4,8 +4,8 @@ import Foundation
 struct AppConfig {
     let baseURL: URL
     let useMockAPI: Bool
-    /// TODO: thay bằng số tổng đài thật.
-    let supportHotline: String
+    /// TODO: thay bằng email hỗ trợ thật.
+    let supportEmail: String
 
     static let current: AppConfig = {
         let info = Bundle.main.infoDictionary ?? [:]
@@ -14,7 +14,7 @@ struct AppConfig {
         return AppConfig(
             baseURL: URL(string: urlString) ?? URL(string: "https://api.example.com")!,
             useMockAPI: useMock,
-            supportHotline: "1900 0000"
+            supportEmail: "support@example.com"
         )
     }()
 }

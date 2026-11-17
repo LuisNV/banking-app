@@ -53,7 +53,7 @@ final class MockAuthRemoteDataSource: AuthRemoteDataSource {
             accessToken: UUID().uuidString,
             refreshToken: UUID().uuidString,
             expiresIn: 900,
-            user: UserDTO(id: "u_001", fullName: "Khách hàng Demo", username: username)
+            user: UserDTO(id: "u_001", fullName: "Học viên Demo", username: username)
         )
     }
 }

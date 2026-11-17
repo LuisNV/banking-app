@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Logo giữ chỗ. TODO: thay bằng logo thật trong Assets.
+/// Logo TingTing: chữ 听 (tīng – "nghe") trên ô bo góc.
+/// TODO: thay bằng logo thật trong Assets khi có.
 struct BrandLogo: View {
     var size: CGFloat = 64
     var style: Style = .filled
@@ -8,8 +9,8 @@ struct BrandLogo: View {
     enum Style { case filled, onBrand }
 
     var body: some View {
-        Image(systemName: "building.columns")
-            .font(.system(size: size * 0.48, weight: .medium))
+        Text("听")
+            .font(.system(size: size * 0.56, weight: .bold, design: .serif))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(

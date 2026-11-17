@@ -1,7 +1,7 @@
 name: BankingApp
 
 options:
-  bundleIdPrefix: com.example.banking
+  bundleIdPrefix: com.example.tingting
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -44,16 +44,16 @@ targets:
       - path: BankingApp
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.banking.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.tingting.app
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     info:
       path: BankingApp/Resources/Info.plist
       properties:
-        CFBundleDisplayName: Ngân hàng Số
+        CFBundleDisplayName: TingTing
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        NSFaceIDUsageDescription: Dùng Face ID để đăng nhập nhanh và an toàn.
+        NSFaceIDUsageDescription: Dùng khuôn mặt để đăng nhập TingTing nhanh hơn.
         API_BASE_URL: $(API_BASE_URL)
         USE_MOCK_API: $(USE_MOCK_API)
     dependencies:
@@ -71,7 +71,7 @@ targets:
       - target: BankingApp
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.banking.app.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.tingting.app.tests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:

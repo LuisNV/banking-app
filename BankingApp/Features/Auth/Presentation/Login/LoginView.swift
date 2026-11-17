@@ -63,7 +63,7 @@ struct LoginView: View {
         HStack {
             CircleIconButton(
                 systemImage: "line.3.horizontal",
-                accessibilityLabel: "Mở menu tiện ích",
+                accessibilityLabel: "Mở menu học thử",
                 action: viewModel.toggleDrawer
             )
 
@@ -91,10 +91,10 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 20) {
             BrandLogo()
             VStack(alignment: .leading, spacing: 8) {
-                Text("Chào mừng đến\nNgân hàng Số")
+                Text("Chào mừng đến\nTingTing")
                     .font(.largeTitle.bold())
                     .foregroundStyle(AppColor.textPrimary)
-                Text("Đăng nhập để tiếp tục giao dịch")
+                Text("Đăng nhập để tiếp tục học tiếng Trung")
                     .font(.body)
                     .foregroundStyle(AppColor.textSecondary)
             }
@@ -104,7 +104,7 @@ struct LoginView: View {
     private var form: some View {
         VStack(spacing: 12) {
             AppTextField(
-                "Tên đăng nhập / Số điện thoại",
+                "Email / Số điện thoại",
                 systemImage: "person",
                 text: $viewModel.username,
                 textContentType: .username,
@@ -156,7 +156,7 @@ struct LoginView: View {
                     Task { await viewModel.loginWithBiometrics() }
                 } label: {
                     Label(
-                        "Đăng nhập bằng \(viewModel.biometricType.displayName)",
+                        viewModel.biometricType.loginTitle,
                         systemImage: viewModel.biometricType.systemImage
                     )
                 }
@@ -180,17 +180,23 @@ struct LoginView: View {
         VStack(spacing: 10) {
             HStack(spacing: 4) {
                 Text("Chưa có tài khoản?").foregroundStyle(AppColor.textSecondary)
-                Button("Mở tài khoản") {
-                    // TODO: điều hướng tới luồng eKYC mở tài khoản.
+                Button("Đăng ký") {
+                    // TODO: điều hướng tới luồng đăng ký.
                 }
                 .fontWeight(.semibold)
                 .foregroundStyle(AppColor.brand)
             }
             .font(.subheadline)
 
-            Label("Bảo mật chuẩn ngân hàng, mã hoá đầu cuối", systemImage: "checkmark.shield")
-                .font(.caption)
-                .foregroundStyle(AppColor.textSecondary)
+            HStack(spacing: 4) {
+                Link("Điều khoản", destination: URL(string: "https://example.com/terms")!)
+                Text("·")
+                Link("Quyền riêng tư", destination: URL(string: "https://example.com/privacy")!)
+            }
+            .font(.caption)
+            .underline()
+            .foregroundStyle(AppColor.textSecondary)
+            .tint(AppColor.textSecondary)
         }
         .padding(.top, 8)
         .padding(.bottom, 8)

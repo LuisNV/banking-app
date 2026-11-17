@@ -16,6 +16,16 @@ enum BiometricType: Equatable {
         }
     }
 
+    /// Nhãn nút đăng nhập sinh trắc học.
+    var loginTitle: String {
+        switch self {
+        case .none: return ""
+        case .faceID: return "Đăng nhập bằng khuôn mặt"
+        case .touchID: return "Đăng nhập bằng vân tay"
+        case .opticID: return "Đăng nhập bằng mống mắt"
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .none: return "lock"
