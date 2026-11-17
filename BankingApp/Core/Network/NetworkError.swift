@@ -8,6 +8,7 @@ enum NetworkError: Error, Equatable {
     case server(statusCode: Int)
     case decoding
     case unknown
+    case api(code: Int, httpStatus: Int, message: String, traceId: String?)
 
     init(_ error: AFError) {
         if let code = error.responseCode {

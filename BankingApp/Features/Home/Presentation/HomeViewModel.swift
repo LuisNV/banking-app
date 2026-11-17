@@ -5,14 +5,14 @@ import Observation
 @MainActor
 @Observable
 final class HomeViewModel {
-    let user: User
+    let user: User?
     private(set) var isLoggingOut = false
 
     private let logoutUseCase: LogoutUseCaseProtocol
     private let onLoggedOut: () -> Void
 
     init(
-        user: User,
+        user: User?,
         logoutUseCase: LogoutUseCaseProtocol = Container.shared.logoutUseCase(),
         onLoggedOut: @escaping () -> Void
     ) {

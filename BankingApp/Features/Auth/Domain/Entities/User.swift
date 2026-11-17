@@ -7,7 +7,7 @@ struct User: Equatable, Hashable {
 }
 
 struct AuthSession: Equatable {
-    let user: User
+    let user: User?
     let accessToken: String
     let refreshToken: String
     let expiresAt: Date

@@ -57,6 +57,11 @@ final class AuthRepositoryImpl: AuthRepository {
         guard let networkError = error as? NetworkError else { return .unknown }
         switch networkError {
         case .unauthorized: return unauthorized
+        case .api(_, let httpStatus, let message, _):
+            if httpStatus == 401 && unauthorized == .sessionExpired {
+                return .sessionExpired
+            }
+            return message.isEmpty ? .unknown : .api(message: message)
         case .noConnection, .timeout: return .network
         case .server, .decoding, .unknown: return .unknown
         }

@@ -6,8 +6,6 @@ protocol AuthRemoteDataSource {
     func logout() async throws
 }
 
-struct EmptyResponseDTO: Decodable {}
-
 final class AuthRemoteDataSourceImpl: AuthRemoteDataSource {
     private let client: APIClient
 
@@ -53,6 +51,7 @@ final class MockAuthRemoteDataSource: AuthRemoteDataSource {
             accessToken: UUID().uuidString,
             refreshToken: UUID().uuidString,
             expiresIn: 900,
+            tokenType: "Bearer",
             user: UserDTO(id: "u_001", fullName: "Học viên Demo", username: username)
         )
     }

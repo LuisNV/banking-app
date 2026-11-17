@@ -51,13 +51,45 @@ final class AlamofireAPIClient: APIClient {
             )
         }
 
-        do {
-            return try await request
-                .validate(statusCode: 200..<300)
-                .serializingDecodable(T.self, decoder: decoder)
-                .value
-        } catch let error as AFError {
+        let response = await request
+            .validate(statusCode: 200..<300)
+            .serializingData()
+            .response
+
+        // Đọc metadata trước để giữ thông báo lỗi, kể cả khi HTTP validation thất bại.
+        let metadata = response.data.flatMap {
+            try? decoder.decode(APIResponse<EmptyResponseDTO>.self, from: $0)
+        }
+        if let metadata,
+           response.error == nil || response.response != nil {
+            let status = response.response?.statusCode ?? metadata.httpStatus
+            if !(200..<300).contains(status) || metadata.code != 0
+                || !(200..<300).contains(metadata.httpStatus) {
+                throw NetworkError.api(
+                    code: metadata.code,
+                    httpStatus: (200..<300).contains(status) ? metadata.httpStatus : status,
+                    message: metadata.message,
+                    traceId: metadata.traceId
+                )
+            }
+        }
+        if let error = response.error {
             throw NetworkError(error)
+        }
+
+        // HTTP 204/205 có thể không có body.
+        if response.data?.isEmpty != false,
+           let empty = EmptyResponseDTO() as? T {
+            return empty
+        }
+        guard let body = response.data else { throw NetworkError.decoding }
+        do {
+            let envelope = try decoder.decode(APIResponse<T>.self, from: body)
+            if let data = envelope.data { return data }
+            if let empty = EmptyResponseDTO() as? T { return empty }
+            throw NetworkError.decoding
+        } catch {
+            throw NetworkError.decoding
         }
     }
 

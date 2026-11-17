@@ -9,7 +9,7 @@ struct AppConfig {
 
     static let current: AppConfig = {
         let info = Bundle.main.infoDictionary ?? [:]
-        let urlString = info["API_BASE_URL"] as? String ?? "https://api.example.com"
+        let urlString = info["API_BASE_URL"] as? String ?? "http://localhost:8081/api"
         let useMock = (info["USE_MOCK_API"] as? String) == "YES"
         return AppConfig(
             baseURL: URL(string: urlString) ?? URL(string: "https://api.example.com")!,

@@ -14,7 +14,7 @@ struct HomeView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Xin chào,").foregroundStyle(AppColor.textSecondary)
-                        Text(viewModel.user.fullName).font(.title2.bold())
+                        Text(viewModel.user?.fullName ?? "Chào mừng bạn").font(.title2.bold())
                     }
                     .padding(.vertical, 8)
                 }

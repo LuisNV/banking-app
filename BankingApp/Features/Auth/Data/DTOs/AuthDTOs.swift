@@ -20,13 +20,14 @@ struct AuthResponseDTO: Decodable {
     let refreshToken: String
     /// Số giây đến khi access token hết hạn.
     let expiresIn: Int
-    let user: UserDTO
+    let tokenType: String
+    let user: UserDTO?
 }
 
 extension AuthResponseDTO {
     func toDomain(now: Date = Date()) -> AuthSession {
         AuthSession(
-            user: User(id: user.id, fullName: user.fullName, username: user.username),
+            user: user.map { User(id: $0.id, fullName: $0.fullName, username: $0.username) },
             accessToken: accessToken,
             refreshToken: refreshToken,
             expiresAt: now.addingTimeInterval(TimeInterval(expiresIn))

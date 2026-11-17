@@ -10,6 +10,7 @@ enum AuthError: LocalizedError, Equatable {
     case sessionExpired
     case network
     case unknown
+    case api(message: String)
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +22,7 @@ enum AuthError: LocalizedError, Equatable {
         case .biometricFailed: return "Xác thực sinh trắc học không thành công."
         case .sessionExpired: return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
         case .network: return "Không thể kết nối. Vui lòng kiểm tra mạng và thử lại."
+        case .api(let message): return message
         case .unknown: return "Đã có lỗi xảy ra. Vui lòng thử lại."
         }
     }

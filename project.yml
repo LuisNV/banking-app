@@ -16,10 +16,10 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
   configs:
     Debug:
-      API_BASE_URL: "https://api-dev.example.com"
-      USE_MOCK_API: "YES"
+      API_BASE_URL: "http://localhost:8081/api"
+      USE_MOCK_API: "NO"
     Release:
-      API_BASE_URL: "https://api.example.com"
+      API_BASE_URL: "http://localhost:8081/api"
       USE_MOCK_API: "NO"
 
 packages:

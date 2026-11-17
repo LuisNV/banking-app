@@ -7,7 +7,7 @@ import Observation
 final class AppRouter {
     enum Route: Equatable {
         case login
-        case home(User)
+        case home(User?)
     }
 
     private(set) var route: Route = .login
