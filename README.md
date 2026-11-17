@@ -25,9 +25,47 @@ xcodegen generate
 open BankingApp.xcodeproj
 ```
 
-Cấu hình **Debug** dùng mock API (`USE_MOCK_API = YES`): mọi tên đăng nhập, mật khẩu `123456`.
-Sau lần đăng nhập đầu, nút đăng nhập bằng khuôn mặt/vân tay sẽ dùng được (refresh token lưu trong Keychain).
-Đổi URL API trong `project.yml` → `settings.configs`.
+### Gọi API thật hay dữ liệu giả (mock)
+
+| Scheme trong Xcode | Gọi tới |
+|---|---|
+| `BankingApp` | **API thật** tại `API_BASE_URL` (Debug: `project.yml` → `settings.configs.Debug`) |
+| `BankingApp (Mock)` | Backend giả, không gọi mạng. Mọi tài khoản, mật khẩu `123456` |
+
+- Sửa `API_BASE_URL` trong `project.yml` rồi **chạy lại `xcodegen generate`**. Sửa trực tiếp trong Xcode Build Settings sẽ bị ghi đè ở lần generate sau.
+- Đổi nhanh không cần generate: Xcode ▸ *Edit Scheme* ▸ *Run* ▸ *Arguments* ▸ *Environment Variables*, thêm `API_BASE_URL` hoặc `USE_MOCK_API`. Biến môi trường được ưu tiên hơn `project.yml`.
+- Khi app khởi động, console in dòng `⚙️ AppConfig — ...` cho biết đang dùng API nào. Bản Debug in đầy đủ request/response (mật khẩu được che).
+- Bản Release luôn gọi API thật.
+- Server `http://` trong mạng nội bộ (localhost, 192.168.x.x, `.local`) được phép khi phát triển. Chạy trên iPhone thật thì dùng IP máy tính trong LAN, không dùng `localhost`.
+
+### Hợp đồng API
+
+Mặc định Debug gọi `http://localhost:8081/api`. Đường dẫn ở `Features/Auth/Data/Network/AuthEndpoint.swift`, DTO ở `Features/Auth/Data/DTOs/AuthDTOs.swift`. Request gửi JSON `snake_case`.
+
+```
+POST {API_BASE_URL}/v1/auth/login     body: {"username": "...", "password": "..."}
+POST {API_BASE_URL}/v1/auth/refresh   body: {"refresh_token": "..."}
+POST {API_BASE_URL}/v1/auth/logout    header: Authorization: Bearer <access_token>
+```
+
+Mọi phản hồi bọc trong envelope (`Core/Network/APIResponse.swift`):
+
+```json
+{
+  "code": 0,
+  "httpStatus": 200,
+  "message": "OK",
+  "traceId": "abc123",
+  "data": {
+    "access_token": "...", "refresh_token": "...", "expires_in": 900, "token_type": "Bearer",
+    "user": {"id": "u_001", "full_name": "...", "username": "..."}
+  }
+}
+```
+
+- `code != 0` hoặc `httpStatus` ngoài 2xx → `NetworkError.api`, app hiện đúng `message` của server.
+- `user` có thể vắng mặt.
+- Decode thất bại → console Debug in rõ kiểu và lỗi (thiếu field nào, sai kiểu gì).
 
 ## Thư viện (Swift Package Manager)
 

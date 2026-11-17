@@ -15,6 +15,8 @@ settings:
     TARGETED_DEVICE_FAMILY: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
   configs:
+    # Đổi API_BASE_URL thành địa chỉ backend của bạn, rồi chạy lại `xcodegen generate`.
+    # Muốn dùng dữ liệu giả: chọn scheme "BankingApp (Mock)" trong Xcode, không cần sửa ở đây.
     Debug:
       API_BASE_URL: "http://localhost:8081/api"
       USE_MOCK_API: "NO"
@@ -56,6 +58,9 @@ targets:
         NSFaceIDUsageDescription: Dùng khuôn mặt để đăng nhập TingTing nhanh hơn.
         API_BASE_URL: $(API_BASE_URL)
         USE_MOCK_API: $(USE_MOCK_API)
+        # Cho phép gọi server http:// trong mạng nội bộ (localhost, 192.168.x.x, *.local) khi phát triển.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     dependencies:
       - package: Alamofire
       - package: Factory
@@ -87,3 +92,13 @@ schemes:
       targets: [BankingAppTests]
     archive:
       config: Release
+
+  # Chạy app với backend giả: mọi tài khoản, mật khẩu 123456. Không gọi mạng.
+  BankingApp (Mock):
+    build:
+      targets:
+        BankingApp: all
+    run:
+      config: Debug
+      environmentVariables:
+        USE_MOCK_API: "YES"

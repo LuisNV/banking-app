@@ -9,5 +9,14 @@ struct APIResponse<Payload: Decodable>: Decodable {
     let traceId: String?
 }
 
-/// Dùng cho endpoint không trả dữ liệu và để đọc metadata mà bỏ qua payload.
+/// Chỉ đọc phần metadata của envelope, bỏ qua `data`
+/// (nên dùng được cho mọi kiểu payload: object, mảng, chuỗi, null).
+struct APIResponseMeta: Decodable {
+    let code: Int
+    let httpStatus: Int
+    let message: String
+    let traceId: String?
+}
+
+/// Dùng cho endpoint không trả dữ liệu.
 struct EmptyResponseDTO: Decodable {}

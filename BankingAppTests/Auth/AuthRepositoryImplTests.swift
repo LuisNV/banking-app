@@ -6,7 +6,7 @@ private final class StubRemote: AuthRemoteDataSource {
     var refreshError: Error?
 
     let response = AuthResponseDTO(
-        accessToken: "a", refreshToken: "r", expiresIn: 60,
+        accessToken: "a", refreshToken: "r", expiresIn: 60, tokenType: "Bearer",
         user: UserDTO(id: "1", fullName: "Demo", username: "demo")
     )
 
@@ -48,7 +48,7 @@ final class AuthRepositoryImplTests: XCTestCase {
 
         let session = try await sut.login(username: "demo", password: "123456")
 
-        XCTAssertEqual(session.user.username, "demo")
+        XCTAssertEqual(session.user?.username, "demo")
         XCTAssertEqual(local.refreshToken, "r")
         XCTAssertTrue(sut.hasStoredSession())
     }

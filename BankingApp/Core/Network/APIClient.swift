@@ -17,7 +17,7 @@ final class AlamofireAPIClient: APIClient {
         self.session = Session(
             configuration: configuration,
             interceptor: AuthInterceptor(tokenStore: tokenStore),
-            eventMonitors: AppConfig.current.useMockAPI ? [NetworkLogger()] : []
+            eventMonitors: Self.eventMonitors
         )
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -58,7 +58,7 @@ final class AlamofireAPIClient: APIClient {
 
         // Đọc metadata trước để giữ thông báo lỗi, kể cả khi HTTP validation thất bại.
         let metadata = response.data.flatMap {
-            try? decoder.decode(APIResponse<EmptyResponseDTO>.self, from: $0)
+            try? decoder.decode(APIResponseMeta.self, from: $0)
         }
         if let metadata,
            response.error == nil || response.response != nil {
@@ -88,9 +88,22 @@ final class AlamofireAPIClient: APIClient {
             if let data = envelope.data { return data }
             if let empty = EmptyResponseDTO() as? T { return empty }
             throw NetworkError.decoding
+        } catch let error as NetworkError {
+            throw error
         } catch {
+            #if DEBUG
+            print("❌ Decode \(T.self) thất bại tại \(url.absoluteString): \(error)")
+            #endif
             throw NetworkError.decoding
         }
+    }
+
+    private static var eventMonitors: [EventMonitor] {
+        #if DEBUG
+        return [NetworkLogger()]
+        #else
+        return []
+        #endif
     }
 
     private static let encoder: JSONEncoder = {
