@@ -1,0 +1,46 @@
+import Factory
+import Foundation
+
+extension Container {
+    // MARK: Data
+    var authRemoteDataSource: Factory<any AuthRemoteDataSource> {
+        self {
+            self.appConfig().useMockAPI
+                ? MockAuthRemoteDataSource()
+                : AuthRemoteDataSourceImpl(client: self.apiClient())
+        }.singleton
+    }
+
+    var authLocalDataSource: Factory<any AuthLocalDataSource> {
+        self {
+            AuthLocalDataSourceImpl(tokenStore: self.tokenStore(), keyValueStore: self.keyValueStore())
+        }.singleton
+    }
+
+    var authRepository: Factory<any AuthRepository> {
+        self {
+            AuthRepositoryImpl(remote: self.authRemoteDataSource(), local: self.authLocalDataSource())
+        }.singleton
+    }
+
+    // MARK: Domain
+    var loginUseCase: Factory<any LoginUseCaseProtocol> {
+        self { LoginUseCase(repository: self.authRepository()) }
+    }
+
+    var biometricLoginUseCase: Factory<any BiometricLoginUseCaseProtocol> {
+        self {
+            BiometricLoginUseCase(repository: self.authRepository(), biometricService: self.biometricAuthService())
+        }
+    }
+
+    var getLoginPreferencesUseCase: Factory<any GetLoginPreferencesUseCaseProtocol> {
+        self {
+            GetLoginPreferencesUseCase(repository: self.authRepository(), biometricService: self.biometricAuthService())
+        }
+    }
+
+    var logoutUseCase: Factory<any LogoutUseCaseProtocol> {
+        self { LogoutUseCase(repository: self.authRepository()) }
+    }
+}

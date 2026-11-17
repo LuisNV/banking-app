@@ -1,0 +1,14 @@
+# Xcode
+*.xcodeproj
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+.swiftpm/
+.build/
+BankingApp/Resources/Info.plist
+.DS_Store
