@@ -4,10 +4,11 @@ import Foundation
 extension Container {
     // MARK: Data
     var authRemoteDataSource: Factory<any AuthRemoteDataSource> {
-        self {
-            self.appConfig().useMockAPI
-                ? MockAuthRemoteDataSource()
-                : AuthRemoteDataSourceImpl(client: self.apiClient())
+        self { () -> any AuthRemoteDataSource in
+            if self.appConfig().useMockAPI {
+                return MockAuthRemoteDataSource()
+            }
+            return AuthRemoteDataSourceImpl(client: self.apiClient())
         }.singleton
     }
 

@@ -14,7 +14,7 @@ final class LoginViewModel {
 
     // MARK: Output
     private(set) var isLoading = false
-    private(set) var biometricType: BiometricType = .none
+    private(set) var biometricType: BiometricType = .faceID
     private(set) var canUseBiometricLogin = false
     var errorMessage: String?
 
