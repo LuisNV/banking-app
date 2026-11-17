@@ -11,7 +11,7 @@ final class AuthRepositoryImpl: AuthRepository {
 
     func login(username: String, password: String) async throws -> AuthSession {
         do {
-            let dto = try await remote.login(LoginRequestDTO(username: username, password: password))
+            let dto = try await remote.login(LoginRequestDTO(email: username, password: password))
             let session = dto.toDomain()
             try local.saveTokens(accessToken: session.accessToken, refreshToken: session.refreshToken)
             return session
