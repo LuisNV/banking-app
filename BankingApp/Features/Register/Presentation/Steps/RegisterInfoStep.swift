@@ -56,10 +56,6 @@ struct RegisterInfoStep: View {
                     .focused($focusedField, equals: .phone)
                 }
 
-                ForEach(viewModel.visibleInfoErrors, id: \.self) { message in
-                    GroupedFooter(text: message, isError: true)
-                }
-
                 GroupedCard {
                     HStack(spacing: 14) {
                         IconTile(systemImage: "calendar", color: Color(.systemRed))

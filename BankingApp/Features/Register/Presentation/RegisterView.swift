@@ -35,7 +35,7 @@ struct RegisterView: View {
         .background(AppColor.background)
         .animation(.snappy(duration: 0.35), value: viewModel.step)
         .alert(
-            "Không thể tiếp tục",
+            viewModel.errorTitle,
             isPresented: $viewModel.isShowingError,
             presenting: viewModel.errorMessage
         ) { _ in

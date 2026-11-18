@@ -52,16 +52,30 @@ final class RegisterViewModelTests: XCTestCase {
         sut.phone = "0912345678"
     }
 
-    func test_info_invalid_staysAndShowsErrors() {
+    func test_info_invalid_staysAndShowsErrorPopup() {
         let sut = makeSUT()
-        XCTAssertTrue(sut.visibleInfoErrors.isEmpty)
+        XCTAssertFalse(sut.isShowingError)
         XCTAssertEqual(sut.status(for: .email), .none)
 
         sut.continueFromInfo()
 
         XCTAssertEqual(sut.step, .info)
-        XCTAssertEqual(sut.visibleInfoErrors.count, 3)
+        XCTAssertTrue(sut.isShowingError)
+        XCTAssertEqual(sut.errorTitle, RegisterViewModel.invalidInfoTitle)
+        XCTAssertEqual(sut.errorMessage, sut.infoErrorMessages.joined(separator: "\n"))
+        XCTAssertEqual(sut.infoErrorMessages.count, 3)
         XCTAssertEqual(sut.status(for: .email), .invalid)
+    }
+
+    func test_info_partiallyInvalid_popupListsOnlyWrongFields() {
+        let sut = makeSUT()
+        sut.fullName = "Nguyễn Minh Anh"
+        sut.email = "minhanh@email.com"
+        sut.phone = "091234567"
+
+        sut.continueFromInfo()
+
+        XCTAssertEqual(sut.errorMessage, "Số điện thoại cần đủ 10 chữ số, bắt đầu bằng 0.")
     }
 
     func test_info_validFieldShowsTick_beforeSubmit() {
@@ -117,6 +131,7 @@ final class RegisterViewModelTests: XCTestCase {
         await sut.createAccount()
 
         XCTAssertEqual(sut.step, .info)
+        XCTAssertEqual(sut.errorTitle, RegisterViewModel.defaultErrorTitle)
         XCTAssertEqual(sut.errorMessage, RegisterError.emailTaken.errorDescription)
     }
 

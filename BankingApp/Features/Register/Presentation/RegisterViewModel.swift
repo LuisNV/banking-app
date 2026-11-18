@@ -23,7 +23,11 @@ final class RegisterViewModel {
     /// Dùng để chọn hướng hiệu ứng chuyển màn (tiến: từ phải sang, lùi: từ trái sang).
     private(set) var isNavigatingBack = false
     private(set) var isLoading = false
+    private(set) var errorTitle = RegisterViewModel.defaultErrorTitle
     var errorMessage: String?
+
+    static let defaultErrorTitle = "Không thể tiếp tục"
+    static let invalidInfoTitle = "Kiểm tra lại thông tin"
 
     var isShowingError: Bool {
         get { errorMessage != nil }
@@ -82,9 +86,8 @@ final class RegisterViewModel {
         RegistrationValidator.errors(for: registrationInfo, now: now())
     }
 
-    /// Lỗi chỉ hiện sau khi người dùng bấm "Tiếp tục", để không báo đỏ khi đang gõ dở.
-    var visibleInfoErrors: [String] {
-        guard didSubmitInfo else { return [] }
+    /// Các lỗi theo đúng thứ tự trường trên màn hình.
+    var infoErrorMessages: [String] {
         let errors = infoErrors
         return RegistrationField.allCases.compactMap { errors[$0] }
     }
@@ -105,9 +108,14 @@ final class RegisterViewModel {
         return didSubmitInfo ? .invalid : .none
     }
 
+    /// Thông tin chưa hợp lệ → hiện popup liệt kê lỗi (ô sai vẫn có dấu đỏ để dễ tìm).
     func continueFromInfo() {
         didSubmitInfo = true
-        guard infoErrors.isEmpty else { return }
+        let messages = infoErrorMessages
+        guard messages.isEmpty else {
+            showError(messages.joined(separator: "\n"), title: Self.invalidInfoTitle)
+            return
+        }
         go(to: .password)
     }
 
@@ -137,7 +145,7 @@ final class RegisterViewModel {
             go(to: .verify)
             startResendCountdown()
         } catch {
-            errorMessage = Self.message(for: error)
+            showError(Self.message(for: error))
         }
     }
 
@@ -167,7 +175,7 @@ final class RegisterViewModel {
             go(to: .done)
         } catch {
             code = ""
-            errorMessage = Self.message(for: error)
+            showError(Self.message(for: error))
         }
     }
 
@@ -190,7 +198,7 @@ final class RegisterViewModel {
             code = ""
             startResendCountdown()
         } catch {
-            errorMessage = Self.message(for: error)
+            showError(Self.message(for: error))
         }
     }
 
@@ -221,6 +229,11 @@ final class RegisterViewModel {
     }
 
     // MARK: - Private
+
+    private func showError(_ message: String, title: String = RegisterViewModel.defaultErrorTitle) {
+        errorTitle = title
+        errorMessage = message
+    }
 
     private func go(to newStep: Step, back: Bool = false) {
         isNavigatingBack = back
