@@ -16,11 +16,12 @@ final class LoginViewModelTests: XCTestCase {
         authenticatedSession = nil
     }
 
-    private func makeSUT() -> LoginViewModel {
+    private func makeSUT(prefilledUsername: String? = nil) -> LoginViewModel {
         LoginViewModel(
             loginUseCase: loginUseCase,
             biometricLoginUseCase: biometricUseCase,
             getPreferencesUseCase: preferencesUseCase,
+            prefilledUsername: prefilledUsername,
             onAuthenticated: { [weak self] in self?.authenticatedSession = $0 }
         )
     }
@@ -33,6 +34,15 @@ final class LoginViewModelTests: XCTestCase {
         sut.onAppear()
         XCTAssertEqual(sut.username, "demo")
         XCTAssertTrue(sut.showsBiometricButton)
+    }
+
+    func test_onAppear_prefilledUsername_winsOverRemembered() {
+        preferencesUseCase.preferences = LoginPreferences(
+            rememberedUsername: "demo", biometricType: .faceID, canUseBiometricLogin: true
+        )
+        let sut = makeSUT(prefilledUsername: "minhanh@email.com")
+        sut.onAppear()
+        XCTAssertEqual(sut.username, "minhanh@email.com")
     }
 
     func test_canSubmit_requiresBothFields() {

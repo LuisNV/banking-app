@@ -138,6 +138,7 @@ BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
 
 - Logo, App Icon thật
 - Email hỗ trợ (`AppConfig.supportEmail`), link Điều khoản / Quyền riêng tư
-- Luồng Quên mật khẩu, Đăng ký, màn hình từng công cụ học thử
+- Luồng Quên mật khẩu, màn hình từng công cụ học thử
+- API đăng ký: luồng Đăng ký đang dùng `MockRegistrationRepository` (mã xác minh `123456`, email `taken@example.com` báo đã tồn tại). Khi có API, thêm RemoteDataSource + RepositoryImpl trong `Features/Register/Data` và đổi factory ở `Container+Register.swift`
 - Đa ngôn ngữ: chuỗi đang viết thẳng tiếng Việt, nên chuyển sang `Localizable.xcstrings`
 - Đăng nhập Apple / Google (chưa làm)

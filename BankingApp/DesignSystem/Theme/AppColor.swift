@@ -15,6 +15,7 @@ enum AppColor {
     static let textTertiary = Color(.tertiaryLabel)
 
     static let success = Color(.systemGreen)
+    static let danger = Color(.systemRed)
 }
 
 extension Color {

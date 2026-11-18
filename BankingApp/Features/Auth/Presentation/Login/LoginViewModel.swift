@@ -33,14 +33,17 @@ final class LoginViewModel {
     private let loginUseCase: LoginUseCaseProtocol
     private let biometricLoginUseCase: BiometricLoginUseCaseProtocol
     private let getPreferencesUseCase: GetLoginPreferencesUseCaseProtocol
+    private let prefilledUsername: String?
     private let onAuthenticated: (AuthSession) -> Void
 
     init(
         loginUseCase: LoginUseCaseProtocol = Container.shared.loginUseCase(),
         biometricLoginUseCase: BiometricLoginUseCaseProtocol = Container.shared.biometricLoginUseCase(),
         getPreferencesUseCase: GetLoginPreferencesUseCaseProtocol = Container.shared.getLoginPreferencesUseCase(),
+        prefilledUsername: String? = nil,
         onAuthenticated: @escaping (AuthSession) -> Void
     ) {
+        self.prefilledUsername = prefilledUsername
         self.loginUseCase = loginUseCase
         self.biometricLoginUseCase = biometricLoginUseCase
         self.getPreferencesUseCase = getPreferencesUseCase
@@ -52,7 +55,11 @@ final class LoginViewModel {
         let preferences = getPreferencesUseCase.execute()
         biometricType = preferences.biometricType
         canUseBiometricLogin = preferences.canUseBiometricLogin
-        if let remembered = preferences.rememberedUsername, username.isEmpty {
+        guard username.isEmpty else { return }
+        // Email vừa đăng ký được ưu tiên hơn tên đăng nhập đã ghi nhớ.
+        if let prefilledUsername {
+            username = prefilledUsername
+        } else if let remembered = preferences.rememberedUsername {
             username = remembered
             rememberMe = true
         }

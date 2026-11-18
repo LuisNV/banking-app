@@ -3,12 +3,14 @@ import SwiftUI
 struct LoginView: View {
     @State private var viewModel: LoginViewModel
     @State private var utilitiesViewModel = UtilitiesViewModel()
+    private let onRegister: () -> Void
     @FocusState private var focusedField: Field?
 
     private enum Field { case username, password }
 
-    init(viewModel: LoginViewModel) {
+    init(viewModel: LoginViewModel, onRegister: @escaping () -> Void = {}) {
         _viewModel = State(initialValue: viewModel)
+        self.onRegister = onRegister
     }
 
     var body: some View {
@@ -180,9 +182,7 @@ struct LoginView: View {
         VStack(spacing: 10) {
             HStack(spacing: 4) {
                 Text("Chưa có tài khoản?").foregroundStyle(AppColor.textSecondary)
-                Button("Đăng ký") {
-                    // TODO: điều hướng tới luồng đăng ký.
-                }
+                Button("Đăng ký", action: onRegister)
                 .fontWeight(.semibold)
                 .foregroundStyle(AppColor.brand)
             }

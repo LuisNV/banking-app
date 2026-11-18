@@ -9,11 +9,24 @@ struct RootView: View {
             switch router.route {
             case .login:
                 LoginView(
-                    viewModel: LoginViewModel(onAuthenticated: { [router] session in
-                        router.showHome(with: session)
-                    })
+                    viewModel: LoginViewModel(
+                        prefilledUsername: router.prefilledUsername,
+                        onAuthenticated: { [router] session in
+                            router.showHome(with: session)
+                        }
+                    ),
+                    onRegister: { [router] in router.showRegister() }
                 )
                 .transition(.opacity)
+
+            case .register:
+                RegisterView(
+                    viewModel: RegisterViewModel(
+                        onCancel: { [router] in router.showLogin() },
+                        onFinished: { [router] email in router.showLogin(prefilledUsername: email) }
+                    )
+                )
+                .transition(.move(edge: .trailing))
 
             case .home(let user):
                 HomeView(

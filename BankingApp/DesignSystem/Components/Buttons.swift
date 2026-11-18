@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// Nút chính: nền màu thương hiệu, chữ trắng.
+/// `isPill = true`: dạng viên thuốc cao 54pt (kiểu iOS 26), dùng ở luồng đăng ký.
 struct PrimaryButtonStyle: ButtonStyle {
     var isLoading = false
+    var isPill = false
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -15,10 +17,12 @@ struct PrimaryButtonStyle: ButtonStyle {
         .font(.headline)
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
-        .frame(height: AppMetrics.buttonHeight)
+        .frame(height: isPill ? AppMetrics.pillButtonHeight : AppMetrics.buttonHeight)
         .background(
             AppColor.brand.opacity(isEnabled ? 1 : 0.4),
-            in: RoundedRectangle(cornerRadius: AppMetrics.buttonRadius, style: .continuous)
+            in: isPill
+                ? AnyShape(Capsule())
+                : AnyShape(RoundedRectangle(cornerRadius: AppMetrics.buttonRadius, style: .continuous))
         )
         .opacity(configuration.isPressed ? 0.85 : 1)
         .scaleEffect(configuration.isPressed ? 0.98 : 1)

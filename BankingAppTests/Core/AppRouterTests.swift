@@ -32,4 +32,18 @@ final class AppRouterTests: XCTestCase {
 
         XCTAssertNil(sut.sessionExpiredMessage)
     }
+
+    func test_register_thenFinish_showsLoginWithPrefilledEmail() {
+        let sut = AppRouter()
+
+        sut.showRegister()
+        XCTAssertEqual(sut.route, .register)
+
+        sut.showLogin(prefilledUsername: "minhanh@email.com")
+        XCTAssertEqual(sut.route, .login)
+        XCTAssertEqual(sut.prefilledUsername, "minhanh@email.com")
+
+        sut.showHome(with: .stub())
+        XCTAssertNil(sut.prefilledUsername)
+    }
 }
