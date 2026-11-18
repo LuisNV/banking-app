@@ -30,7 +30,7 @@ struct RegisterDoneStep: View {
 
             GroupedCard {
                 HStack(spacing: 14) {
-                    IconTile(systemImage: "envelope.fill", color: Color(.systemIndigo))
+                    IconTile(systemImage: "envelope.fill", tint: Color(.systemIndigo))
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Email đã xác minh").font(.body)
                         Text(viewModel.normalizedEmail)

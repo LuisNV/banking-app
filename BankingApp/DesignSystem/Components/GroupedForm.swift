@@ -3,7 +3,7 @@ import SwiftUI
 /// Ô biểu tượng màu bo góc, giống app Cài đặt của iOS.
 struct IconTile: View {
     let systemImage: String
-    let color: Color
+    let tint: Color
     var size: CGFloat = 30
 
     var body: some View {
@@ -11,7 +11,7 @@ struct IconTile: View {
             .font(.system(size: size * 0.52, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(color, in: RoundedRectangle(cornerRadius: size * 0.27, style: .continuous))
+            .background(tint, in: RoundedRectangle(cornerRadius: size * 0.27, style: .continuous))
             .accessibilityHidden(true)
     }
 }
@@ -91,7 +91,7 @@ struct FormFieldRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            IconTile(systemImage: systemImage, color: tint)
+            IconTile(systemImage: systemImage, tint: tint)
 
             Group {
                 if isSecure && !isRevealed {

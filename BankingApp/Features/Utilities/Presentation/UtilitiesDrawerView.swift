@@ -88,7 +88,7 @@ struct UtilitiesDrawerView: View {
                 .padding(.leading, 12)
 
             HStack(spacing: 12) {
-                IconTile(systemImage: "bubble.left.fill", tint: Color(.systemGreen))
+                IconTile(systemImage: "bubble.left.fill", tint: Color(.systemGreen), size: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(support.title).font(.body.weight(.semibold))
                     Text(support.email).font(.footnote).foregroundStyle(AppColor.textSecondary)
@@ -117,7 +117,7 @@ private struct UtilityRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            IconTile(systemImage: item.kind.systemImage, tint: item.kind.tint)
+            IconTile(systemImage: item.kind.systemImage, tint: item.kind.tint, size: 32)
             Text(item.title)
                 .font(.body)
                 .foregroundStyle(AppColor.textPrimary)
@@ -133,28 +133,13 @@ private struct UtilityRow: View {
     }
 }
 
-/// Ô icon màu kiểu Cài đặt iOS.
-struct IconTile: View {
-    let systemImage: String
-    let tint: Color
-
-    var body: some View {
-        Image(systemName: systemImage)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: 32, height: 32)
-            .background(tint, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .accessibilityHidden(true)
-    }
-}
-
 /// Màn hình tạm cho từng tiện ích. TODO: tách thành feature riêng khi làm thật.
 struct UtilityDetailPlaceholderView: View {
     let item: UtilityItem
 
     var body: some View {
         VStack(spacing: 16) {
-            IconTile(systemImage: item.kind.systemImage, tint: item.kind.tint)
+            IconTile(systemImage: item.kind.systemImage, tint: item.kind.tint, size: 32)
                 .scaleEffect(1.6)
                 .padding(.top, 32)
             Text(item.title).font(.title3.bold())

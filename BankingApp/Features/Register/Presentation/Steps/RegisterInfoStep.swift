@@ -62,7 +62,7 @@ struct RegisterInfoStep: View {
 
                 GroupedCard {
                     HStack(spacing: 14) {
-                        IconTile(systemImage: "calendar", color: Color(.systemRed))
+                        IconTile(systemImage: "calendar", tint: Color(.systemRed))
                         DatePicker(
                             "Ngày sinh",
                             selection: $viewModel.birthDate,
