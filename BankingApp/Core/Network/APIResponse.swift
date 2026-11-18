@@ -18,5 +18,10 @@ struct APIResponseMeta: Decodable {
     let traceId: String?
 }
 
+/// Kiểu phản hồi chấp nhận `data` rỗng/null: APIClient trả về `init()` thay vì báo lỗi decode.
+protocol DefaultDecodable: Decodable {
+    init()
+}
+
 /// Dùng cho endpoint không trả dữ liệu.
-struct EmptyResponseDTO: Decodable {}
+struct EmptyResponseDTO: DefaultDecodable {}

@@ -34,14 +34,37 @@ final class AlamofireAPIClient: APIClient {
             headers.add(name: AuthInterceptor.skipAuthHeader, value: "1")
         }
 
+        let requestModifier: Session.RequestModifier? = endpoint.timeout.map { timeout in
+            { $0.timeoutInterval = timeout }
+        }
+
         let request: DataRequest
-        if let body = endpoint.body {
+        if let files = endpoint.files {
+            let fields = endpoint.formFields ?? [:]
+            // UploadRequest là lớp con của DataRequest nên phần xử lý phản hồi bên dưới dùng chung,
+            // kể cả gắn token và tự refresh khi 401.
+            request = session.upload(
+                multipartFormData: { form in
+                    for (key, value) in fields {
+                        form.append(Data(value.utf8), withName: key)
+                    }
+                    for file in files {
+                        form.append(file.data, withName: file.fieldName, fileName: file.fileName, mimeType: file.mimeType)
+                    }
+                },
+                to: url,
+                method: endpoint.method,
+                headers: headers,
+                requestModifier: requestModifier
+            )
+        } else if let body = endpoint.body {
             request = session.request(
                 url,
                 method: endpoint.method,
                 parameters: AnyEncodable(body),
                 encoder: JSONParameterEncoder(encoder: Self.encoder),
-                headers: headers
+                headers: headers,
+                requestModifier: requestModifier
             )
         } else {
             request = session.request(
@@ -49,7 +72,8 @@ final class AlamofireAPIClient: APIClient {
                 method: endpoint.method,
                 parameters: endpoint.queryItems,
                 encoder: URLEncodedFormParameterEncoder.default,
-                headers: headers
+                headers: headers,
+                requestModifier: requestModifier
             )
         }
 
@@ -81,14 +105,14 @@ final class AlamofireAPIClient: APIClient {
 
         // HTTP 204/205 có thể không có body.
         if response.data?.isEmpty != false,
-           let empty = EmptyResponseDTO() as? T {
+           let empty = Self.defaultValue(of: T.self) {
             return empty
         }
         guard let body = response.data else { throw NetworkError.decoding }
         do {
             let envelope = try decoder.decode(APIResponse<T>.self, from: body)
             if let data = envelope.data { return data }
-            if let empty = EmptyResponseDTO() as? T { return empty }
+            if let empty = Self.defaultValue(of: T.self) { return empty }
             throw NetworkError.decoding
         } catch let error as NetworkError {
             throw error
@@ -98,6 +122,10 @@ final class AlamofireAPIClient: APIClient {
             #endif
             throw NetworkError.decoding
         }
+    }
+
+    private static func defaultValue<T>(of type: T.Type) -> T? {
+        (type as? DefaultDecodable.Type)?.init() as? T
     }
 
     private static var eventMonitors: [EventMonitor] {
