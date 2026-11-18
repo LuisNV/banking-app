@@ -40,4 +40,48 @@ final class AuthTokenRefresherTests: XCTestCase {
 
         XCTAssertFalse(result)
     }
+
+    func test_sessionExpired_notifiesOnce() async {
+        let repository = CountingRepository()
+        repository.restoreResult = .failure(AuthError.sessionExpired)
+        let counter = Counter()
+        let sut = AuthTokenRefresher(repository: repository) { counter.increment() }
+
+        async let first = sut.refreshTokens()
+        async let second = sut.refreshTokens()
+        _ = await [first, second]
+
+        XCTAssertEqual(counter.value, 1)
+    }
+
+    func test_missingRefreshToken_notifiesSessionExpired() async {
+        let repository = CountingRepository()
+        repository.restoreResult = .failure(AuthError.biometricNotEnrolled)
+        let counter = Counter()
+        let sut = AuthTokenRefresher(repository: repository) { counter.increment() }
+
+        _ = await sut.refreshTokens()
+
+        XCTAssertEqual(counter.value, 1)
+    }
+
+    func test_networkError_doesNotNotifySessionExpired() async {
+        let repository = CountingRepository()
+        repository.restoreResult = .failure(AuthError.network)
+        let counter = Counter()
+        let sut = AuthTokenRefresher(repository: repository) { counter.increment() }
+
+        let result = await sut.refreshTokens()
+
+        XCTAssertFalse(result)
+        XCTAssertEqual(counter.value, 0)
+    }
+}
+
+private final class Counter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    var value: Int { lock.withLock { count } }
+    func increment() { lock.withLock { count += 1 } }
 }

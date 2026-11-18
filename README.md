@@ -49,6 +49,7 @@ POST {API_BASE_URL}/v1/auth/logout    body: {"refreshToken": "..."}
 ```
 
 - **Refresh**: khi một API cần đăng nhập trả 401, `AuthInterceptor` gọi `refresh` (qua `AuthTokenRefresher`), lưu token mới rồi gửi lại request đó một lần. Nhiều request cùng 401 chỉ gọi refresh một lần. Refresh cũng được dùng khi đăng nhập bằng sinh trắc học.
+- **Hết phiên**: nếu refresh bị server từ chối (hoặc máy không còn refresh token), token bị xoá, app phát `Notification.Name.sessionExpired` và `AppRouter` đưa người dùng về màn đăng nhập kèm thông báo. Lỗi mạng tạm thời không làm người dùng bị đăng xuất.
 - **Logout**: gửi refresh token để server thu hồi, rồi xoá token trong Keychain (kể cả khi gọi API lỗi). Sau khi đăng xuất, phải đăng nhập bằng mật khẩu một lần trước khi dùng lại sinh trắc học.
 
 Mọi phản hồi bọc trong envelope (`Core/Network/APIResponse.swift`):

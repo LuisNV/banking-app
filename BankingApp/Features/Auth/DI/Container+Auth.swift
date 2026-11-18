@@ -26,7 +26,11 @@ extension Container {
 
     /// Dùng bởi `AuthInterceptor` để tự làm mới token khi API trả 401.
     var tokenRefresher: Factory<any TokenRefresher> {
-        self { AuthTokenRefresher(repository: self.authRepository()) }.singleton
+        self {
+            AuthTokenRefresher(repository: self.authRepository()) {
+                NotificationCenter.default.post(name: .sessionExpired, object: nil)
+            }
+        }.singleton
     }
 
     // MARK: Domain
