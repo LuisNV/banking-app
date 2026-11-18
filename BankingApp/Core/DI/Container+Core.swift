@@ -18,7 +18,11 @@ extension Container {
 
     var apiClient: Factory<any APIClient> {
         self {
-            AlamofireAPIClient(baseURL: self.appConfig().baseURL, tokenStore: self.tokenStore())
+            AlamofireAPIClient(
+                baseURL: self.appConfig().baseURL,
+                tokenStore: self.tokenStore(),
+                tokenRefresher: { self.tokenRefresher() }
+            )
         }.singleton
     }
 

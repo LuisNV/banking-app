@@ -3,7 +3,7 @@ import Foundation
 protocol AuthRemoteDataSource {
     func login(_ request: LoginRequestDTO) async throws -> AuthResponseDTO
     func refresh(_ request: RefreshTokenRequestDTO) async throws -> AuthResponseDTO
-    func logout() async throws
+    func logout(_ request: LogoutRequestDTO) async throws
 }
 
 final class AuthRemoteDataSourceImpl: AuthRemoteDataSource {
@@ -21,8 +21,8 @@ final class AuthRemoteDataSourceImpl: AuthRemoteDataSource {
         try await client.request(AuthEndpoint.refresh(request), as: AuthResponseDTO.self)
     }
 
-    func logout() async throws {
-        _ = try await client.request(AuthEndpoint.logout, as: EmptyResponseDTO.self)
+    func logout(_ request: LogoutRequestDTO) async throws {
+        _ = try await client.request(AuthEndpoint.logout(request), as: EmptyResponseDTO.self)
     }
 }
 
@@ -44,7 +44,7 @@ final class MockAuthRemoteDataSource: AuthRemoteDataSource {
         return Self.response(username: "demo")
     }
 
-    func logout() async throws {}
+    func logout(_ request: LogoutRequestDTO) async throws {}
 
     private static func response(username: String) -> AuthResponseDTO {
         AuthResponseDTO(

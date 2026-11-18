@@ -10,13 +10,15 @@ final class AlamofireAPIClient: APIClient {
     private let session: Session
     private let decoder: JSONDecoder
 
-    init(baseURL: URL, tokenStore: TokenStore) {
+    /// - Parameter tokenRefresher: lấy lười (lazy) để tránh vòng phụ thuộc
+    ///   APIClient → TokenRefresher → AuthRepository → APIClient khi khởi tạo DI.
+    init(baseURL: URL, tokenStore: TokenStore, tokenRefresher: @escaping () -> TokenRefresher? = { nil }) {
         self.baseURL = baseURL
         let configuration = URLSessionConfiguration.af.default
         configuration.timeoutIntervalForRequest = 30
         self.session = Session(
             configuration: configuration,
-            interceptor: AuthInterceptor(tokenStore: tokenStore),
+            interceptor: AuthInterceptor(tokenStore: tokenStore, tokenRefresher: tokenRefresher),
             eventMonitors: Self.eventMonitors
         )
         let decoder = JSONDecoder()
@@ -106,9 +108,6 @@ final class AlamofireAPIClient: APIClient {
         #endif
     }
 
-    private static let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-        return encoder
-    }()
+    /// Backend nhận JSON camelCase (vd. `refreshToken`), nên giữ nguyên tên thuộc tính.
+    private static let encoder = JSONEncoder()
 }

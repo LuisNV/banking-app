@@ -4,6 +4,9 @@ import XCTest
 private final class StubRemote: AuthRemoteDataSource {
     var loginError: Error?
     var refreshError: Error?
+    var logoutError: Error?
+    private(set) var refreshRequests: [String] = []
+    private(set) var logoutRequests: [String] = []
 
     let response = AuthResponseDTO(
         accessToken: "a", refreshToken: "r", expiresIn: 60, tokenType: "Bearer",
@@ -16,11 +19,15 @@ private final class StubRemote: AuthRemoteDataSource {
     }
 
     func refresh(_ request: RefreshTokenRequestDTO) async throws -> AuthResponseDTO {
+        refreshRequests.append(request.refreshToken)
         if let refreshError { throw refreshError }
         return response
     }
 
-    func logout() async throws {}
+    func logout(_ request: LogoutRequestDTO) async throws {
+        logoutRequests.append(request.refreshToken)
+        if let logoutError { throw logoutError }
+    }
 }
 
 private final class InMemoryLocal: AuthLocalDataSource {
@@ -78,5 +85,59 @@ final class AuthRepositoryImplTests: XCTestCase {
             XCTAssertEqual(error as? AuthError, .sessionExpired)
         }
         XCTAssertNil(local.refreshToken)
+    }
+
+    func test_restore_sendsStoredRefreshToken_andSavesNewTokens() async throws {
+        let remote = StubRemote()
+        let local = InMemoryLocal()
+        local.refreshToken = "old"
+        let sut = AuthRepositoryImpl(remote: remote, local: local)
+
+        _ = try await sut.restoreSession()
+
+        XCTAssertEqual(remote.refreshRequests, ["old"])
+        XCTAssertEqual(local.accessToken, "a")
+        XCTAssertEqual(local.refreshToken, "r")
+    }
+
+    func test_logout_sendsRefreshToken_andClearsTokens() async {
+        let remote = StubRemote()
+        let local = InMemoryLocal()
+        local.accessToken = "access"
+        local.refreshToken = "refresh"
+        let sut = AuthRepositoryImpl(remote: remote, local: local)
+
+        await sut.logout()
+
+        XCTAssertEqual(remote.logoutRequests, ["refresh"])
+        XCTAssertNil(local.accessToken)
+        XCTAssertNil(local.refreshToken)
+        XCTAssertFalse(sut.hasStoredSession())
+    }
+
+    func test_logout_networkError_stillClearsTokens() async {
+        let remote = StubRemote()
+        remote.logoutError = NetworkError.noConnection
+        let local = InMemoryLocal()
+        local.refreshToken = "refresh"
+        let sut = AuthRepositoryImpl(remote: remote, local: local)
+
+        await sut.logout()
+
+        XCTAssertNil(local.refreshToken)
+    }
+
+    func test_logout_withoutStoredToken_skipsRemoteCall() async {
+        let remote = StubRemote()
+        let sut = AuthRepositoryImpl(remote: remote, local: InMemoryLocal())
+
+        await sut.logout()
+
+        XCTAssertTrue(remote.logoutRequests.isEmpty)
+    }
+
+    func test_logoutRequest_encodesCamelCaseRefreshToken() throws {
+        let data = try JSONEncoder().encode(LogoutRequestDTO(refreshToken: "x"))
+        XCTAssertEqual(String(data: data, encoding: .utf8), #"{"refreshToken":"x"}"#)
     }
 }

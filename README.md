@@ -40,13 +40,16 @@ open BankingApp.xcodeproj
 
 ### Hợp đồng API
 
-Mặc định Debug gọi `http://localhost:8081/api`. Đường dẫn ở `Features/Auth/Data/Network/AuthEndpoint.swift`, DTO ở `Features/Auth/Data/DTOs/AuthDTOs.swift`. Request gửi JSON `snake_case`.
+Mặc định Debug gọi `http://localhost:8081/api`. Đường dẫn ở `Features/Auth/Data/Network/AuthEndpoint.swift`, DTO ở `Features/Auth/Data/DTOs/AuthDTOs.swift`. Request gửi JSON `camelCase`.
 
 ```
-POST {API_BASE_URL}/v1/auth/login     body: {"username": "...", "password": "..."}
-POST {API_BASE_URL}/v1/auth/refresh   body: {"refresh_token": "..."}
-POST {API_BASE_URL}/v1/auth/logout    header: Authorization: Bearer <access_token>
+POST {API_BASE_URL}/v1/auth/login     body: {"email": "...", "password": "..."}
+POST {API_BASE_URL}/v1/auth/refresh   body: {"refreshToken": "..."}
+POST {API_BASE_URL}/v1/auth/logout    body: {"refreshToken": "..."}
 ```
+
+- **Refresh**: khi một API cần đăng nhập trả 401, `AuthInterceptor` gọi `refresh` (qua `AuthTokenRefresher`), lưu token mới rồi gửi lại request đó một lần. Nhiều request cùng 401 chỉ gọi refresh một lần. Refresh cũng được dùng khi đăng nhập bằng sinh trắc học.
+- **Logout**: gửi refresh token để server thu hồi, rồi xoá token trong Keychain (kể cả khi gọi API lỗi). Sau khi đăng xuất, phải đăng nhập bằng mật khẩu một lần trước khi dùng lại sinh trắc học.
 
 Mọi phản hồi bọc trong envelope (`Core/Network/APIResponse.swift`):
 
@@ -134,5 +137,4 @@ BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
 - Email hỗ trợ (`AppConfig.supportEmail`), link Điều khoản / Quyền riêng tư
 - Luồng Quên mật khẩu, Đăng ký, màn hình từng công cụ học thử
 - Đa ngôn ngữ: chuỗi đang viết thẳng tiếng Việt, nên chuyển sang `Localizable.xcstrings`
-- Refresh token tự động khi 401 (mở rộng `AuthInterceptor.retry`)
 - Đăng nhập Apple / Google (chưa làm)

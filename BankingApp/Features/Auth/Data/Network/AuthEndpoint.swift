@@ -4,7 +4,7 @@ import Foundation
 enum AuthEndpoint: Endpoint {
     case login(LoginRequestDTO)
     case refresh(RefreshTokenRequestDTO)
-    case logout
+    case logout(LogoutRequestDTO)
 
     var path: String {
         switch self {
@@ -20,14 +20,15 @@ enum AuthEndpoint: Endpoint {
         switch self {
         case .login(let dto): return dto
         case .refresh(let dto): return dto
-        case .logout: return nil
+        case .logout(let dto): return dto
         }
     }
 
     var requiresAuth: Bool {
         switch self {
-        case .login, .refresh: return false
-        case .logout: return true
+        // Cả ba endpoint xác thực bằng body, không cần Bearer token.
+        // Riêng refresh bắt buộc không gắn token để AuthInterceptor không retry đệ quy.
+        case .login, .refresh, .logout: return false
         }
     }
 }

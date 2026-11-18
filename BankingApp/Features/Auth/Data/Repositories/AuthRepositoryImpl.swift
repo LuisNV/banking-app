@@ -38,10 +38,15 @@ final class AuthRepositoryImpl: AuthRepository {
         local.refreshToken != nil
     }
 
-    /// Đăng xuất giữ lại refresh token để lần sau đăng nhập bằng sinh trắc học.
-    /// Muốn xoá hẳn thì gọi thêm `local.clearTokens()`.
+    /// Gửi refresh token để server thu hồi, rồi xoá token trên máy.
+    /// Token luôn bị xoá kể cả khi gọi API lỗi (mất mạng...), để đăng xuất không bao giờ bị kẹt.
+    /// Vì refresh token đã bị thu hồi, lần sau phải đăng nhập bằng mật khẩu
+    /// trước khi dùng lại được sinh trắc học.
     func logout() async {
-        try? await remote.logout()
+        if let refreshToken = local.refreshToken {
+            try? await remote.logout(LogoutRequestDTO(refreshToken: refreshToken))
+        }
+        local.clearTokens()
     }
 
     func rememberedUsername() -> String? {

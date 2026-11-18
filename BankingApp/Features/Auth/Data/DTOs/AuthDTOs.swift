@@ -5,7 +5,13 @@ struct LoginRequestDTO: Encodable {
     let password: String
 }
 
+/// Body: `{"refreshToken": "..."}`
 struct RefreshTokenRequestDTO: Encodable {
+    let refreshToken: String
+}
+
+/// Body: `{"refreshToken": "..."}`. Server thu hồi refresh token này.
+struct LogoutRequestDTO: Encodable {
     let refreshToken: String
 }
 

@@ -1,14 +1,23 @@
 import Alamofire
 import Foundation
 
-/// Tự gắn Bearer token vào mọi request cần xác thực.
+/// Làm mới cặp token bằng refresh token đã lưu (`POST v1/auth/refresh`).
+/// Trả về `true` nếu đã có access token mới trong `TokenStore`.
+protocol TokenRefresher: AnyObject {
+    func refreshTokens() async -> Bool
+}
+
+/// - `adapt`: tự gắn Bearer token vào mọi request cần xác thực.
+/// - `retry`: request bị 401 → làm mới token một lần rồi gửi lại.
 final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
     static let skipAuthHeader = "X-Skip-Auth"
 
     private let tokenStore: TokenStore
+    private let tokenRefresher: () -> TokenRefresher?
 
-    init(tokenStore: TokenStore) {
+    init(tokenStore: TokenStore, tokenRefresher: @escaping () -> TokenRefresher? = { nil }) {
         self.tokenStore = tokenStore
+        self.tokenRefresher = tokenRefresher
     }
 
     func adapt(
@@ -23,6 +32,34 @@ final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
             request.headers.add(.authorization(bearerToken: token))
         }
         completion(.success(request))
+    }
+
+    func retry(
+        _ request: Request,
+        for session: Session,
+        dueTo error: Error,
+        completion: @escaping (RetryResult) -> Void
+    ) {
+        // Chỉ xử lý request đã gắn token (không phải login/refresh/logout) bị 401, và chỉ thử lại 1 lần.
+        guard request.response?.statusCode == 401,
+              request.retryCount == 0,
+              let usedHeader = request.request?.value(forHTTPHeaderField: "Authorization"),
+              let refresher = tokenRefresher()
+        else {
+            completion(.doNotRetry)
+            return
+        }
+
+        // Một request khác đã làm mới token trong lúc request này đang chạy: chỉ cần gửi lại.
+        if let current = tokenStore.accessToken, usedHeader != "Bearer \(current)" {
+            completion(.retry)
+            return
+        }
+
+        Task {
+            let refreshed = await refresher.refreshTokens()
+            completion(refreshed ? .retry : .doNotRetry)
+        }
     }
 }
 
