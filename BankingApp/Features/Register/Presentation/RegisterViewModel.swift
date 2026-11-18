@@ -28,6 +28,7 @@ final class RegisterViewModel {
 
     static let defaultErrorTitle = "Không thể tiếp tục"
     static let invalidInfoTitle = "Kiểm tra lại thông tin"
+    static let invalidInfoMessage = "Một số thông tin chưa đúng. Vui lòng sửa các ô có dấu đỏ rồi thử lại."
 
     var isShowingError: Bool {
         get { errorMessage != nil }
@@ -86,12 +87,6 @@ final class RegisterViewModel {
         RegistrationValidator.errors(for: registrationInfo, now: now())
     }
 
-    /// Các lỗi theo đúng thứ tự trường trên màn hình.
-    var infoErrorMessages: [String] {
-        let errors = infoErrors
-        return RegistrationField.allCases.compactMap { errors[$0] }
-    }
-
     func status(for field: RegistrationField) -> FormFieldRow.Status {
         let value: String
         switch field {
@@ -108,12 +103,12 @@ final class RegisterViewModel {
         return didSubmitInfo ? .invalid : .none
     }
 
-    /// Thông tin chưa hợp lệ → hiện popup liệt kê lỗi (ô sai vẫn có dấu đỏ để dễ tìm).
+    /// Thông tin chưa hợp lệ → hiện popup với một câu thông báo chung;
+    /// các ô sai được đánh dấu đỏ để người dùng biết cần sửa ở đâu.
     func continueFromInfo() {
         didSubmitInfo = true
-        let messages = infoErrorMessages
-        guard messages.isEmpty else {
-            showError(messages.joined(separator: "\n"), title: Self.invalidInfoTitle)
+        guard infoErrors.isEmpty else {
+            showError(Self.invalidInfoMessage, title: Self.invalidInfoTitle)
             return
         }
         go(to: .password)
