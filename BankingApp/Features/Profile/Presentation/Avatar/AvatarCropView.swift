@@ -13,77 +13,105 @@ struct AvatarCropView: View {
     @State private var committedOffset: CGSize = .zero
     @State private var isProcessing = false
 
+    private static let hintHeight: CGFloat = 52
+    private static let barHeight: CGFloat = 64
+
     var body: some View {
         GeometryReader { proxy in
-            let diameter = max(120, min(proxy.size.width - 40, proxy.size.height - 220))
+            // Tự tính khoảng tai thỏ / thanh home: trong màn toàn màn hình (fullScreenCover)
+            // vùng an toàn tự động có lúc bằng 0, làm chữ hướng dẫn đè lên thanh trạng thái.
+            let insets = Self.screenInsets(proxy.safeAreaInsets)
+            let width = proxy.size.width
+            let cropHeight = max(160, proxy.size.height - insets.top - insets.bottom - Self.hintHeight - Self.barHeight)
+            let diameter = max(120, min(width - 40, cropHeight - 32))
             let geometry = AvatarCropGeometry(imageSize: image.size, cropDiameter: diameter)
-            let shown = geometry.displayedSize(zoom: zoom)
 
-            // Lớp ảnh: khung cố định bằng màn hình. Ảnh phóng to có thể rộng hơn màn hình,
-            // nên phải cố định khung + cắt phần thừa, nếu không bố cục bị kéo rộng theo ảnh
-            // và các nút bị đẩy ra ngoài mép.
-            Color.black
-                .frame(width: proxy.size.width, height: proxy.size.height)
-                .overlay {
-                    Image(uiImage: image)
-                        .resizable()
-                        .frame(width: shown.width, height: shown.height)
-                        .offset(offset)
-                        .accessibilityHidden(true)
-                }
-                .clipped()
-                .overlay {
-                    CropMask(diameter: diameter)
-                        .frame(width: proxy.size.width, height: proxy.size.height)
-                        .allowsHitTesting(false)
-                }
-                .contentShape(Rectangle())
-                .gesture(
-                    SimultaneousGesture(
-                        MagnifyGesture()
-                            .onChanged { value in
-                                zoom = geometry.clampedZoom(committedZoom * value.magnification)
-                                offset = geometry.clampedOffset(offset, zoom: zoom)
-                            }
-                            .onEnded { _ in commit() },
-                        DragGesture()
-                            .onChanged { value in
-                                offset = geometry.clampedOffset(
-                                    CGSize(
-                                        width: committedOffset.width + value.translation.width,
-                                        height: committedOffset.height + value.translation.height
-                                    ),
-                                    zoom: zoom
-                                )
-                            }
-                            .onEnded { _ in commit() }
-                    )
-                )
-                .onTapGesture(count: 2) {
-                    withAnimation(.spring(duration: 0.3)) {
-                        zoom = zoom > 1.01 ? 1 : 2
-                        offset = geometry.clampedOffset(offset, zoom: zoom)
-                    }
-                    commit()
-                }
-                .overlay(alignment: .top) {
-                    Text("Kéo và phóng to để ảnh vừa khung")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.85))
-                        .padding(.top, 20)
-                        .allowsHitTesting(false)
-                }
-                .overlay(alignment: .bottom) {
-                    bottomBar(geometry: geometry)
-                        .frame(width: proxy.size.width)
-                }
+            VStack(spacing: 0) {
+                Color.clear.frame(height: insets.top)
+
+                Text("Kéo và phóng to để ảnh vừa khung")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .frame(width: width, height: Self.hintHeight)
+
+                cropArea(geometry: geometry, size: CGSize(width: width, height: cropHeight))
+
+                bottomBar(geometry: geometry)
+                    .frame(width: width, height: Self.barHeight)
+
+                Color.clear.frame(height: insets.bottom)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
         }
+        .ignoresSafeArea()
         .background(Color.black.ignoresSafeArea())
-        // Không ẩn thanh trạng thái: khi ẩn, vùng an toàn phía trên bị thu lại và chữ hướng dẫn
-        // đè lên tai thỏ / Dynamic Island. Giao diện tối để giờ, pin hiện chữ trắng trên nền đen.
         .preferredColorScheme(.dark)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Chỉnh ảnh đại diện")
+    }
+
+    /// Vùng chỉnh ảnh: khung cố định, phần ảnh thừa bị cắt; ngoài khung tròn bị làm tối.
+    private func cropArea(geometry: AvatarCropGeometry, size: CGSize) -> some View {
+        let shown = geometry.displayedSize(zoom: zoom)
+        return Color.black
+            .frame(width: size.width, height: size.height)
+            .overlay {
+                Image(uiImage: image)
+                    .resizable()
+                    .frame(width: shown.width, height: shown.height)
+                    .offset(offset)
+                    .accessibilityHidden(true)
+            }
+            .clipped()
+            .overlay {
+                CropMask(diameter: geometry.cropDiameter)
+                    .frame(width: size.width, height: size.height)
+                    .allowsHitTesting(false)
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                SimultaneousGesture(
+                    MagnifyGesture()
+                        .onChanged { value in
+                            zoom = geometry.clampedZoom(committedZoom * value.magnification)
+                            offset = geometry.clampedOffset(offset, zoom: zoom)
+                        }
+                        .onEnded { _ in commit() },
+                    DragGesture()
+                        .onChanged { value in
+                            offset = geometry.clampedOffset(
+                                CGSize(
+                                    width: committedOffset.width + value.translation.width,
+                                    height: committedOffset.height + value.translation.height
+                                ),
+                                zoom: zoom
+                            )
+                        }
+                        .onEnded { _ in commit() }
+                )
+            )
+            .onTapGesture(count: 2) {
+                withAnimation(.spring(duration: 0.3)) {
+                    zoom = zoom > 1.01 ? 1 : 2
+                    offset = geometry.clampedOffset(offset, zoom: zoom)
+                }
+                commit()
+            }
+    }
+
+    /// Khoảng an toàn thật của màn hình: lấy giá trị lớn hơn giữa SwiftUI và cửa sổ hiện tại.
+    private static func screenInsets(_ fromProxy: EdgeInsets) -> EdgeInsets {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)
+        let windowInsets = window?.safeAreaInsets ?? .zero
+        return EdgeInsets(
+            top: max(fromProxy.top, windowInsets.top),
+            leading: 0,
+            bottom: max(fromProxy.bottom, windowInsets.bottom),
+            trailing: 0
+        )
     }
 
     private func bottomBar(geometry: AvatarCropGeometry) -> some View {
@@ -132,7 +160,6 @@ struct AvatarCropView: View {
             .disabled(isProcessing)
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 12)
     }
 
     private func commit() {
