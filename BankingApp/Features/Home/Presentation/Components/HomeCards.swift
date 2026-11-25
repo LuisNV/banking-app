@@ -109,13 +109,6 @@ struct ContinueLessonCard: View {
         .padding(.top, 18)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(alignment: .topTrailing) {
-            Text(lesson.symbol)
-                .font(.system(size: 120, weight: .bold))
-                .foregroundStyle(.white.opacity(0.12))
-                .offset(x: 6, y: -18)
-                .accessibilityHidden(true)
-        }
         .background(AppColor.brand)
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         .shadow(color: AppColor.brand.opacity(0.25), radius: 14, y: 10)
