@@ -57,6 +57,14 @@ final class AuthRepositoryImpl: AuthRepository {
         local.setRememberedUsername(username)
     }
 
+    func isBiometricLoginEnabled() -> Bool {
+        local.isBiometricLoginEnabled
+    }
+
+    func setBiometricLoginEnabled(_ enabled: Bool) {
+        local.setBiometricLoginEnabled(enabled)
+    }
+
     private static func map(_ error: Error, unauthorized: AuthError) -> AuthError {
         if let authError = error as? AuthError { return authError }
         guard let networkError = error as? NetworkError else { return .unknown }

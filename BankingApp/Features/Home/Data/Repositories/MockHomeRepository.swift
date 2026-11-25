@@ -22,6 +22,13 @@ final class MockHomeRepository: HomeRepository {
                 meaning: "học tập",
                 detail: "Động từ · học, học hỏi",
                 level: "HSK 1"
+            ),
+            learner: LearnerSummary(
+                levelTitle: "HSK 2 · Sơ cấp",
+                wordsLearned: 248,
+                lessonsCompleted: 12,
+                reminderTime: "20:00",
+                scriptName: "Giản thể"
             )
         )
     }

@@ -10,4 +10,7 @@ protocol AuthRepository {
 
     func rememberedUsername() -> String?
     func setRememberedUsername(_ username: String?)
+
+    func isBiometricLoginEnabled() -> Bool
+    func setBiometricLoginEnabled(_ enabled: Bool)
 }

@@ -143,4 +143,5 @@ BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
 - Đa ngôn ngữ: chuỗi đang viết thẳng tiếng Việt, nên chuyển sang `Localizable.xcstrings`
 - Đăng nhập Apple / Google (chưa làm)
 - API Trang chủ: số liệu (chuỗi học, mục tiêu, bài đang học, từ của ngày) đang lấy từ `MockHomeRepository`. Khi có API, thêm RemoteDataSource + `HomeRepositoryImpl` trong `Features/Home/Data` và đổi factory ở `Container+Home.swift`
-- Tab Bài học, Ôn tập đang là màn tạm; tab Cá nhân mới có đổi ảnh đại diện và đăng xuất
+- Tab Bài học, Ôn tập đang là màn tạm
+- Tab Cá nhân: đổi ảnh, bật/tắt đăng nhập sinh trắc học (lưu trên máy, bật lại phải xác thực), góp ý qua email, đăng xuất đã chạy thật. Sửa thông tin, Đổi mật khẩu, Mục tiêu mỗi ngày, Nhắc học, Chữ Hán đang là màn tạm; số liệu (từ đã học, bài hoàn thành, cấp độ) lấy từ `MockHomeRepository`

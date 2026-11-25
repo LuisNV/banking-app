@@ -16,6 +16,8 @@ private final class CountingRepository: AuthRepository {
     func logout() async {}
     func rememberedUsername() -> String? { nil }
     func setRememberedUsername(_ username: String?) {}
+    func isBiometricLoginEnabled() -> Bool { true }
+    func setBiometricLoginEnabled(_ enabled: Bool) {}
 }
 
 final class AuthTokenRefresherTests: XCTestCase {

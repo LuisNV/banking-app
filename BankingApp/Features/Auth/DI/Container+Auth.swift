@@ -50,6 +50,12 @@ extension Container {
         }
     }
 
+    var biometricLoginSettingUseCase: Factory<any BiometricLoginSettingUseCaseProtocol> {
+        self {
+            BiometricLoginSettingUseCase(repository: self.authRepository(), biometricService: self.biometricAuthService())
+        }
+    }
+
     var logoutUseCase: Factory<any LogoutUseCaseProtocol> {
         self { LogoutUseCase(repository: self.authRepository()) }
     }

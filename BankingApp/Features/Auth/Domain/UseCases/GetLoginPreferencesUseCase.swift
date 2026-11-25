@@ -13,7 +13,9 @@ struct GetLoginPreferencesUseCase: GetLoginPreferencesUseCaseProtocol {
         return LoginPreferences(
             rememberedUsername: repository.rememberedUsername(),
             biometricType: type,
-            canUseBiometricLogin: type != .none && repository.hasStoredSession()
+            canUseBiometricLogin: type != .none
+                && repository.isBiometricLoginEnabled()
+                && repository.hasStoredSession()
         )
     }
 }

@@ -46,6 +46,9 @@ private final class InMemoryLocal: AuthLocalDataSource {
     }
 
     func setRememberedUsername(_ username: String?) { rememberedUsername = username }
+
+    var isBiometricLoginEnabled = true
+    func setBiometricLoginEnabled(_ enabled: Bool) { isBiometricLoginEnabled = enabled }
 }
 
 final class AuthRepositoryImplTests: XCTestCase {

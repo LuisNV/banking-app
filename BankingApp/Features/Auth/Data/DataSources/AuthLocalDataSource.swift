@@ -7,11 +7,17 @@ protocol AuthLocalDataSource {
 
     var rememberedUsername: String? { get }
     func setRememberedUsername(_ username: String?)
+
+    /// Người dùng có cho phép đăng nhập bằng sinh trắc học không (mặc định: có).
+    var isBiometricLoginEnabled: Bool { get }
+    func setBiometricLoginEnabled(_ enabled: Bool)
 }
 
 final class AuthLocalDataSourceImpl: AuthLocalDataSource {
     private enum Key {
         static let rememberedUsername = "auth.remembered_username"
+        /// Lưu cờ "đã tắt" để mặc định (chưa lưu gì) là bật.
+        static let biometricLoginDisabled = "auth.biometric_login_disabled"
     }
 
     private let tokenStore: TokenStore
@@ -42,5 +48,13 @@ final class AuthLocalDataSourceImpl: AuthLocalDataSource {
         } else {
             keyValueStore.removeObject(forKey: Key.rememberedUsername)
         }
+    }
+
+    var isBiometricLoginEnabled: Bool {
+        !keyValueStore.bool(forKey: Key.biometricLoginDisabled)
+    }
+
+    func setBiometricLoginEnabled(_ enabled: Bool) {
+        keyValueStore.set(!enabled, forKey: Key.biometricLoginDisabled)
     }
 }

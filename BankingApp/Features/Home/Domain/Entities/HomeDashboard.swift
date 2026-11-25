@@ -7,6 +7,19 @@ struct HomeDashboard: Equatable {
     let dailyGoal: DailyGoal
     let currentLesson: LessonProgress?
     let wordOfTheDay: WordOfTheDay?
+    let learner: LearnerSummary
+}
+
+/// Tóm tắt quá trình học và tuỳ chọn học tập, hiển thị ở màn Cá nhân.
+struct LearnerSummary: Equatable {
+    /// Vd. "HSK 2 · Sơ cấp".
+    let levelTitle: String
+    let wordsLearned: Int
+    let lessonsCompleted: Int
+    /// Giờ nhắc học, vd. "20:00"; `nil` = tắt nhắc.
+    let reminderTime: String?
+    /// Vd. "Giản thể".
+    let scriptName: String
 }
 
 struct DailyGoal: Equatable {

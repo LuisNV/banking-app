@@ -30,6 +30,10 @@ final class MockAuthRepository: AuthRepository {
     func logout() async { logoutCalled = true }
     func rememberedUsername() -> String? { savedUsername }
     func setRememberedUsername(_ username: String?) { savedUsername = username }
+
+    var biometricLoginEnabled = true
+    func isBiometricLoginEnabled() -> Bool { biometricLoginEnabled }
+    func setBiometricLoginEnabled(_ enabled: Bool) { biometricLoginEnabled = enabled }
 }
 
 final class MockBiometricAuthService: BiometricAuthService {
