@@ -31,4 +31,13 @@ enum AuthEndpoint: Endpoint {
         case .login, .refresh, .logout: return false
         }
     }
+
+    var timeout: TimeInterval? {
+        switch self {
+        // Token trên máy luôn bị xoá dù server có trả lời hay không,
+        // nên không bắt người dùng chờ đủ 30 giây khi mạng chậm.
+        case .logout: return 10
+        case .login, .refresh: return nil
+        }
+    }
 }

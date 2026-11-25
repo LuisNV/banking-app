@@ -22,6 +22,11 @@ struct HomeView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             FloatingTabBar(selection: $viewModel.selectedTab)
         }
+        .overlay {
+            if viewModel.isLoggingOut {
+                LoadingOverlay(message: "Đang đăng xuất...")
+            }
+        }
         .alert(
             "Không thể cập nhật ảnh",
             isPresented: $viewModel.isShowingError,
