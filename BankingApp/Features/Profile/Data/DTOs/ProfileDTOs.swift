@@ -144,3 +144,55 @@ private extension Optional where Wrapped == String {
         return value
     }
 }
+
+/// Body của `PUT v1/users/me`. Trường `nil` không được gửi.
+/// `email` và `currentPassword` chỉ có khi đổi email.
+struct UpdateProfileRequestDTO: Encodable, Equatable {
+    let fullName: String
+    let phone: String
+    let address: String
+    let gender: String?
+    /// "yyyy-MM-dd".
+    let dateOfBirth: String?
+    let email: String?
+    let currentPassword: String?
+
+    init(
+        fullName: String,
+        phone: String,
+        address: String,
+        gender: String?,
+        dateOfBirth: String?,
+        email: String?,
+        currentPassword: String?
+    ) {
+        self.fullName = fullName
+        self.phone = phone
+        self.address = address
+        self.gender = gender
+        self.dateOfBirth = dateOfBirth
+        self.email = email
+        self.currentPassword = currentPassword
+    }
+
+    init(_ update: ProfileUpdate) {
+        self.init(
+            fullName: update.fullName,
+            phone: update.phone,
+            address: update.address,
+            gender: update.gender?.apiValue,
+            dateOfBirth: update.birthDate.map(Self.formatDate),
+            email: update.email,
+            currentPassword: update.currentPassword
+        )
+    }
+
+    static func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+}

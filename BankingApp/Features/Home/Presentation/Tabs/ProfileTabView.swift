@@ -5,6 +5,7 @@ import SwiftUI
 struct ProfileTabView: View {
     enum Route: Hashable {
         case personalInfo
+        case editProfile
         case changePassword
         case dailyGoal
         case reminder
@@ -13,6 +14,7 @@ struct ProfileTabView: View {
         var title: String {
             switch self {
             case .personalInfo: return "Thông tin cá nhân"
+            case .editProfile: return "Sửa thông tin"
             case .changePassword: return "Đổi mật khẩu"
             case .dailyGoal: return "Mục tiêu mỗi ngày"
             case .reminder: return "Nhắc học"
@@ -44,7 +46,8 @@ struct ProfileTabView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink("Sửa", value: Route.personalInfo)
+                    // Chưa tải xong hồ sơ thì mở màn Thông tin cá nhân (có trạng thái tải/thử lại).
+                    NavigationLink("Sửa", value: viewModel.profile == nil ? Route.personalInfo : Route.editProfile)
                         .fontWeight(.semibold)
                 }
             }
@@ -264,6 +267,18 @@ struct ProfileTabView: View {
         switch route {
         case .personalInfo:
             PersonalInfoView(viewModel: viewModel)
+        case .editProfile:
+            if let profile = viewModel.profile {
+                EditProfileView(
+                    viewModel: EditProfileViewModel(
+                        profile: profile,
+                        onSaved: { viewModel.applyUpdatedProfile($0) },
+                        onAccountGone: { Task { await viewModel.logout() } }
+                    )
+                )
+            } else {
+                PersonalInfoView(viewModel: viewModel)
+            }
         case .changePassword, .dailyGoal, .reminder, .script:
             ContentUnavailableView(
                 route.title,

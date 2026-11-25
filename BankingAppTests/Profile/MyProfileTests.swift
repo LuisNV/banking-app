@@ -12,6 +12,7 @@ private final class MeRemote: ProfileRemoteDataSource {
     var meResult: Result<UserProfileDTO, Error>
     init(_ result: Result<UserProfileDTO, Error>) { meResult = result }
     func fetchMe() async throws -> UserProfileDTO { try meResult.get() }
+    func updateMe(_ request: UpdateProfileRequestDTO) async throws -> UserProfileDTO { try meResult.get() }
     func uploadAvatar(jpegData: Data) async throws -> AvatarResponseDTO { AvatarResponseDTO() }
 }
 

@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Màn "Thông tin cá nhân": dữ liệu từ `GET v1/auth/me` (chỉ xem).
-/// TODO: cho sửa khi có API cập nhật hồ sơ.
+/// Màn "Thông tin cá nhân": dữ liệu từ `GET v1/auth/me`. Bấm "Sửa" để mở `EditProfileView`.
 struct PersonalInfoView: View {
     let viewModel: HomeViewModel
 
@@ -24,6 +23,14 @@ struct PersonalInfoView: View {
         }
         .navigationTitle("Thông tin cá nhân")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if viewModel.profile != nil {
+                    NavigationLink("Sửa", value: ProfileTabView.Route.editProfile)
+                        .fontWeight(.semibold)
+                }
+            }
+        }
         .refreshable { await viewModel.loadProfile(force: true) }
         .task { await viewModel.loadProfile(force: true) }
     }
@@ -68,11 +75,6 @@ struct PersonalInfoView: View {
                     .padding(.horizontal, 20)
             }
 
-            Text("Chức năng sửa thông tin sẽ có trong bản cập nhật sau.")
-                .font(.footnote)
-                .foregroundStyle(AppColor.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
         }
     }
 

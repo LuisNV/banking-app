@@ -14,7 +14,7 @@ struct UserProfile: Equatable {
     /// `nil` nếu server không gửi.
     var isEmailVerified: Bool?
 
-    enum Gender: Equatable {
+    enum Gender: Equatable, CaseIterable, Hashable {
         case male, female, other
 
         /// Từ giá trị server: "MALE" / "FEMALE" / "OTHER" (không phân biệt hoa thường).
@@ -24,6 +24,15 @@ struct UserProfile: Equatable {
             case "FEMALE": self = .female
             case "OTHER": self = .other
             default: return nil
+            }
+        }
+
+        /// Giá trị gửi lên server.
+        var apiValue: String {
+            switch self {
+            case .male: return "MALE"
+            case .female: return "FEMALE"
+            case .other: return "OTHER"
             }
         }
 

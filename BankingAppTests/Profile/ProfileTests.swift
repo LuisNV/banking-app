@@ -11,6 +11,13 @@ final class MockProfileRepository: ProfileRepository {
 
     func currentProfile() async throws -> UserProfile { try profileResult.get() }
 
+    var updateResult: Result<UserProfile, Error> = .failure(ProfileUpdateError.unknown)
+    private(set) var updates: [ProfileUpdate] = []
+    func updateProfile(_ update: ProfileUpdate) async throws -> UserProfile {
+        updates.append(update)
+        return try updateResult.get()
+    }
+
     func uploadAvatar(jpegData: Data) async throws -> URL? {
         uploaded.append(jpegData)
         return try result.get()
@@ -22,6 +29,7 @@ private final class StubProfileRemote: ProfileRemoteDataSource {
     var meResult: Result<UserProfileDTO, Error> = .failure(NetworkError.decoding)
 
     func fetchMe() async throws -> UserProfileDTO { try meResult.get() }
+    func updateMe(_ request: UpdateProfileRequestDTO) async throws -> UserProfileDTO { try meResult.get() }
 
     func uploadAvatar(jpegData: Data) async throws -> AvatarResponseDTO {
         try result.get()

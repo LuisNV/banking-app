@@ -138,6 +138,12 @@ final class HomeViewModel {
         }
     }
 
+    /// Sau khi sửa hồ sơ thành công: hiện ngay dữ liệu mới server trả về.
+    func applyUpdatedProfile(_ profile: UserProfile) {
+        self.profile = profile
+        profileErrorMessage = nil
+    }
+
     func playWordOfTheDay() {
         guard let word = dashboard?.wordOfTheDay else { return }
         pronunciation.speak(word.hanzi)

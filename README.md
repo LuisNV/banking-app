@@ -47,6 +47,7 @@ POST {API_BASE_URL}/v1/auth/login     body: {"email": "...", "password": "..."}
 POST {API_BASE_URL}/v1/auth/refresh   body: {"refreshToken": "..."}
 POST {API_BASE_URL}/v1/auth/logout    body: {"refreshToken": "..."}
 GET  {API_BASE_URL}/v1/auth/me           Bearer token → thông tin tài khoản
+PUT  {API_BASE_URL}/v1/users/me          Bearer token, body: {"fullName", "phone", "address", "gender", "dateOfBirth", "email"?, "currentPassword"?}
 POST {API_BASE_URL}/v1/users/me/avatar  multipart/form-data, field "file" (JPEG) + Bearer token
 ```
 
@@ -55,6 +56,7 @@ POST {API_BASE_URL}/v1/users/me/avatar  multipart/form-data, field "file" (JPEG)
 - **Hết phiên**: nếu refresh bị server từ chối (hoặc máy không còn refresh token), token bị xoá, app phát `Notification.Name.sessionExpired` và `AppRouter` đưa người dùng về màn đăng nhập kèm thông báo. Lỗi mạng tạm thời không làm người dùng bị đăng xuất.
 - **Upload file**: khai báo `files` (và `formFields` nếu cần) trong endpoint, `APIClient` sẽ gửi `multipart/form-data`. Ví dụ `Features/Profile/Data/Network/ProfileEndpoint.swift`. Ảnh đại diện được thu nhỏ còn cạnh dài 1024 px và nén JPEG trước khi gửi (`AvatarImageProcessor`), giới hạn 5 MB (`UploadAvatarUseCase.maxMegabytes`). `data` trả về có thể là chuỗi URL, object có `avatarUrl`/`url`, hoặc `null`.
 - **Thông tin cá nhân** (`v1/auth/me`): tải khi vào app, dùng cho lời chào ở Trang chủ, đầu tab Cá nhân và màn *Thông tin cá nhân* (kéo xuống để tải lại). `data` gồm `id` (số), `fullName`, `email`, `phone`, `address`, `gender` (`MALE`/`FEMALE`/`OTHER` → Nam/Nữ/Khác), `dateOfBirth` (`yyyy-MM-dd`), `avatarUrl`, `emailVerified`; chỉ `id` là bắt buộc, trường thiếu hiện "Chưa cập nhật". DTO ở `Features/Profile/Data/DTOs/ProfileDTOs.swift` (`UserProfileDTO`).
+- **Sửa hồ sơ** (`PUT v1/users/me`, màn *Sửa thông tin*): app kiểm tra trước theo đúng quy tắc server (họ tên ≤ 150, số điện thoại ≤ 30, địa chỉ ≤ 500 ký tự, đều bắt buộc; ngày sinh không ở tương lai; email đúng định dạng, ≤ 254 ký tự) và bỏ khoảng trắng hai đầu, email chuyển chữ thường. Email không đổi thì không gửi `email`/`currentPassword`. Đổi email thì hiện bottom sheet hỏi mật khẩu hiện tại. Mã lỗi: `1001` thiếu mật khẩu (mở lại bottom sheet), `1002` sai mật khẩu (báo trong bottom sheet), `1003` email trùng (báo ở ô Email), `1004` số điện thoại trùng (báo ở ô Số điện thoại), `404` tài khoản không còn → đăng xuất. Bản Mock: mật khẩu `123456`, email `taken@example.com` và số `0000000000` báo trùng.
 - **Logout**: gửi refresh token để server thu hồi, rồi xoá token trong Keychain (kể cả khi gọi API lỗi). Sau khi đăng xuất, phải đăng nhập bằng mật khẩu một lần trước khi dùng lại sinh trắc học.
 
 Mọi phản hồi bọc trong envelope (`Core/Network/APIResponse.swift`):

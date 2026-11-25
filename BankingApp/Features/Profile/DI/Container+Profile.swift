@@ -21,6 +21,10 @@ extension Container {
         self { GetMyProfileUseCase(repository: self.profileRepository()) }
     }
 
+    var updateProfileUseCase: Factory<any UpdateProfileUseCaseProtocol> {
+        self { UpdateProfileUseCase(repository: self.profileRepository()) }
+    }
+
     var uploadAvatarUseCase: Factory<any UploadAvatarUseCaseProtocol> {
         self { UploadAvatarUseCase(repository: self.profileRepository()) }
     }
