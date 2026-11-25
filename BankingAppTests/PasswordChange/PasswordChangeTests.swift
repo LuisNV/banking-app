@@ -72,23 +72,39 @@ final class PasswordChangeDataTests: XCTestCase {
         XCTAssertEqual(result.toDomain(), PasswordChangeResult(loggedOutOtherDevices: true, revokedSessionCount: 2))
     }
 
-    func test_mapsErrors() {
+    /// Bảng mã trong `ErrorCode.java`.
+    func test_mapsErrorCodes() {
         func api(_ code: Int, _ status: Int, _ message: String = "m") -> NetworkError {
             .api(code: code, httpStatus: status, message: message, traceId: nil)
         }
-        XCTAssertEqual(PasswordChangeRepositoryImpl.map(api(1002, 400, "Bạn còn 4 lần thử")),
-                       .wrongCurrentPassword(message: "Bạn còn 4 lần thử"))
-        XCTAssertEqual(PasswordChangeRepositoryImpl.map(api(1018, 429, "thử lại sau 15 phút")),
-                       .locked(message: "thử lại sau 15 phút"))
-        XCTAssertEqual(PasswordChangeRepositoryImpl.map(api(1010, 400, "Bạn còn 3 lần thử")),
-                       .invalidCode(message: "Bạn còn 3 lần thử"))
-        XCTAssertEqual(PasswordChangeRepositoryImpl.map(api(1013, 429, "Vui lòng chờ 20 giây")),
-                       .resendTooSoon(message: "Vui lòng chờ 20 giây"))
-        XCTAssertEqual(PasswordChangeRepositoryImpl.map(api(APIResponseMeta.namedErrorCode, 410, "Hết hạn")), .requestExpired)
-        XCTAssertEqual(PasswordChangeRepositoryImpl.map(api(APIResponseMeta.namedErrorCode, 409, "Phiên không xác định")),
-                       .api(message: "Phiên không xác định"))
-        XCTAssertEqual(PasswordChangeRepositoryImpl.map(NetworkError.unauthorized), .sessionExpired)
+        typealias Repo = PasswordChangeRepositoryImpl
+        XCTAssertEqual(Repo.map(api(1002, 400, "Bạn còn 4 lần thử"), in: .start), .wrongCurrentPassword(message: "Bạn còn 4 lần thử"))
+        XCTAssertEqual(Repo.map(api(1008, 400), in: .start), .passwordMismatch(message: "m"))
+        XCTAssertEqual(Repo.map(api(1009, 400), in: .start), .weakPassword(message: "m"))
+        XCTAssertEqual(Repo.map(api(1010, 400, "Bạn còn 3 lần thử"), in: .verify), .invalidCode(message: "Bạn còn 3 lần thử"))
+        XCTAssertEqual(Repo.map(api(1011, 400), in: .verify), .codeExpired(message: "m"))
+        XCTAssertEqual(Repo.map(api(1012, 429), in: .verify), .tooManyAttempts(message: "m"))
+        XCTAssertEqual(Repo.map(api(1013, 429, "Vui lòng chờ 20 giây"), in: .resend), .resendTooSoon(message: "Vui lòng chờ 20 giây"))
+        XCTAssertEqual(Repo.map(api(1016, 400), in: .start), .sessionUnknown(message: "m"))
+        XCTAssertEqual(Repo.map(api(1017, 400), in: .start), .sameAsCurrent(message: "m"))
+        XCTAssertEqual(Repo.map(api(1018, 429, "thử lại sau 15 phút"), in: .start), .locked(message: "thử lại sau 15 phút"))
+        XCTAssertEqual(Repo.map(api(1019, 404), in: .verify), .requestNotFound(message: "m"))
+        XCTAssertEqual(Repo.map(api(1020, 410), in: .resend), .requestExpired(message: "m"))
+        XCTAssertEqual(Repo.map(NetworkError.unauthorized, in: .verify), .sessionExpired)
         XCTAssertEqual(PasswordChangeError.locked(message: "Vui lòng thử lại sau 12 phút").lockMinutes, 12)
+    }
+
+    /// 1014: bước 1 hiện câu của server; gửi lại mã thì dùng câu của app (câu mặc định của server nói về "phiên đăng ký").
+    func test_sendLimit_dependsOnOperation() {
+        let error = NetworkError.api(code: 1014, httpStatus: 429, message: "… vui lòng tạo phiên đăng ký mới", traceId: nil)
+        XCTAssertEqual(
+            PasswordChangeRepositoryImpl.map(error, in: .start),
+            .tooManyRequests(message: "… vui lòng tạo phiên đăng ký mới")
+        )
+        let resend = PasswordChangeRepositoryImpl.map(error, in: .resend)
+        XCTAssertEqual(resend, .sendLimitReached)
+        XCTAssertFalse(resend.errorDescription?.contains("đăng ký") ?? true)
+        XCTAssertTrue(resend.requiresRestart)
     }
 
     func test_apiMeta_acceptsStringCode() throws {
@@ -236,7 +252,7 @@ final class ChangePasswordViewModelTests: XCTestCase {
     }
 
     func test_requestExpired_returnsToForm_keepingPasswords() async {
-        useCase.verifyResults = [.failure(PasswordChangeError.requestExpired)]
+        useCase.verifyResults = [.failure(PasswordChangeError.requestExpired(message: "Yêu cầu đổi mật khẩu đã hết hạn, vui lòng thực hiện lại"))]
         let sut = makeSUT()
         await sut.submit()
         sut.updateCode("123456")
@@ -245,6 +261,6 @@ final class ChangePasswordViewModelTests: XCTestCase {
 
         XCTAssertEqual(sut.step, .form)
         XCTAssertEqual(sut.newPassword, "NewPass456")
-        XCTAssertEqual(sut.alertMessage, PasswordChangeError.requestExpired.errorDescription)
+        XCTAssertEqual(sut.alertMessage, "Yêu cầu đổi mật khẩu đã hết hạn, vui lòng thực hiện lại")
     }
 }

@@ -131,7 +131,7 @@ final class ChangePasswordViewModel {
             startCountdown(until: request.resendAvailableAt)
             step = .verify
         } catch {
-            handleFormError(PasswordChangeRepositoryImpl.map(error))
+            handleFormError(PasswordChangeRepositoryImpl.map(error, in: .start))
         }
     }
 
@@ -152,6 +152,9 @@ final class ChangePasswordViewModel {
             serverFieldErrors[.confirm] = error.errorDescription
         case .weakPassword, .sameAsCurrent:
             serverFieldErrors[.new] = error.errorDescription
+        case .sessionUnknown:
+            // Server không biết máy này là phiên nào (vd. token cũ trước khi có deviceId): cần đăng nhập lại.
+            alertMessage = error.errorDescription
         case .sessionExpired:
             break // AppRouter đã đưa về màn đăng nhập.
         default:
@@ -183,7 +186,7 @@ final class ChangePasswordViewModel {
             step = .done
         } catch {
             code = ""
-            handleVerifyError(PasswordChangeRepositoryImpl.map(error))
+            handleVerifyError(PasswordChangeRepositoryImpl.map(error, in: .verify))
         }
     }
 
@@ -226,7 +229,7 @@ final class ChangePasswordViewModel {
             codeError = nil
             startCountdown(until: updated?.resendAvailableAt)
         } catch {
-            handleVerifyError(PasswordChangeRepositoryImpl.map(error))
+            handleVerifyError(PasswordChangeRepositoryImpl.map(error, in: .resend))
         }
     }
 

@@ -59,14 +59,14 @@ final class MockPasswordChangeRemoteDataSource: PasswordChangeRemoteDataSource {
         try await Task.sleep(for: delay)
         if let lockedUntil, lockedUntil > now() {
             let minutes = Int((lockedUntil.timeIntervalSince(now()) / 60).rounded(.up))
-            throw Self.error(1018, 429, "Bạn đã nhập sai mật khẩu quá nhiều lần. Vui lòng thử lại sau \(minutes) phút")
+            throw Self.error(1018, 429, "Nhập sai mật khẩu quá nhiều lần, vui lòng thử lại sau \(minutes) phút")
         }
         guard request.currentPassword == Self.currentPassword else {
             failedPasswords += 1
             if failedPasswords >= 5 {
                 failedPasswords = 0
                 lockedUntil = now().addingTimeInterval(15 * 60)
-                throw Self.error(1018, 429, "Bạn đã nhập sai mật khẩu quá nhiều lần. Vui lòng thử lại sau 15 phút")
+                throw Self.error(1018, 429, "Nhập sai mật khẩu quá nhiều lần, vui lòng thử lại sau 15 phút")
             }
             throw Self.error(1002, 400, "Mật khẩu hiện tại không đúng. Bạn còn \(5 - failedPasswords) lần thử")
         }
@@ -75,7 +75,7 @@ final class MockPasswordChangeRemoteDataSource: PasswordChangeRemoteDataSource {
             throw Self.error(1008, 400, "Mật khẩu nhập lại không khớp")
         }
         guard request.newPassword != request.currentPassword else {
-            throw Self.error(400, 400, "Mật khẩu mới phải khác mật khẩu hiện tại")
+            throw Self.error(1017, 400, "Mật khẩu mới phải khác mật khẩu hiện tại")
         }
         // Yêu cầu cũ bị huỷ, mã cũ hết hiệu lực.
         pending.removeAll()
@@ -90,7 +90,7 @@ final class MockPasswordChangeRemoteDataSource: PasswordChangeRemoteDataSource {
         var item = try find(requestId)
         let wait = 45 - Int(now().timeIntervalSince(item.sentAt))
         if wait > 0 { throw Self.error(1013, 429, "Vui lòng chờ \(wait) giây") }
-        guard item.sendCount < 5 else { throw Self.error(1014, 429, "Bạn đã gửi lại mã quá nhiều lần") }
+        guard item.sendCount < 5 else { throw Self.error(1014, 429, "Đã gửi mã quá nhiều lần") }
         item.sendCount += 1
         item.sentAt = now()
         item.failedCodes = 0
@@ -117,7 +117,7 @@ final class MockPasswordChangeRemoteDataSource: PasswordChangeRemoteDataSource {
 
     private func find(_ id: String) throws -> Pending {
         guard let item = pending[id], now().timeIntervalSince(item.createdAt) <= 15 * 60 else {
-            throw Self.error(410, 410, "Yêu cầu đổi mật khẩu đã hết hạn")
+            throw Self.error(1020, 410, "Yêu cầu đổi mật khẩu đã hết hạn, vui lòng thực hiện lại")
         }
         return item
     }
