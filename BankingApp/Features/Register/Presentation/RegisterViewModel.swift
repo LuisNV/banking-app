@@ -28,6 +28,7 @@ final class RegisterViewModel {
 
     static let defaultErrorTitle = "Không thể tiếp tục"
     static let invalidInfoTitle = "Kiểm tra lại thông tin"
+    static let invalidInfoMessage = "Thông tin chưa hợp lệ. Vui lòng kiểm tra các ô được đánh dấu."
 
     var isShowingError: Bool {
         get { errorMessage != nil }
@@ -111,9 +112,8 @@ final class RegisterViewModel {
     /// Thông tin chưa hợp lệ → hiện popup liệt kê lỗi (ô sai vẫn có dấu đỏ để dễ tìm).
     func continueFromInfo() {
         didSubmitInfo = true
-        let messages = infoErrorMessages
-        guard messages.isEmpty else {
-            showError(messages.joined(separator: "\n"), title: Self.invalidInfoTitle)
+        guard infoErrorMessages.isEmpty else {
+            showError(Self.invalidInfoMessage, title: Self.invalidInfoTitle)
             return
         }
         go(to: .password)
