@@ -111,7 +111,7 @@ final class AuthRepositoryImplTests: XCTestCase {
         XCTAssertNil(local.savedUser)
     }
 
-    /// Khớp curl: {"email", "password", "deviceId", "deviceName", "platform"}.
+    /// Khớp curl: {"identifier", "password", "deviceId", "deviceName", "platform"}.
     func test_login_sendsDeviceInfo() async throws {
         let remote = StubRemote()
         let sut = AuthRepositoryImpl(remote: remote, local: InMemoryLocal(), device: StubDevice())
@@ -121,7 +121,7 @@ final class AuthRepositoryImplTests: XCTestCase {
         let request = try XCTUnwrap(remote.loginRequests.first)
         let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: String]
         XCTAssertEqual(json, [
-            "email": "user@example.com",
+            "identifier": "user@example.com",
             "password": "Matkhau123",
             "deviceId": "3f2b8c1e-9a4d-4e7b-b1c2-5d6e7f809a1b",
             "deviceName": "iPhone 15 Pro",

@@ -43,7 +43,7 @@ open BankingApp.xcodeproj
 Mặc định Debug gọi `http://localhost:8081/api`. Đường dẫn ở `Features/Auth/Data/Network/AuthEndpoint.swift`, DTO ở `Features/Auth/Data/DTOs/AuthDTOs.swift`. Request gửi JSON `camelCase`.
 
 ```
-POST {API_BASE_URL}/v1/auth/login     body: {"email", "password", "deviceId", "deviceName", "platform"}
+POST {API_BASE_URL}/v1/auth/login     body: {"identifier" (email hoặc số điện thoại), "password", "deviceId", "deviceName", "platform"}
 POST {API_BASE_URL}/v1/auth/refresh   body: {"refreshToken": "..."}
 POST {API_BASE_URL}/v1/auth/logout    body: {"refreshToken": "..."}
 GET  {API_BASE_URL}/v1/auth/me           Bearer token → thông tin tài khoản

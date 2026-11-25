@@ -74,3 +74,18 @@ final class BiometricLoginUseCaseTests: XCTestCase {
         XCTAssertEqual(session, .stub())
     }
 }
+
+final class LoginIdentifierTests: XCTestCase {
+    func test_email_isTrimmedAndLowercased() {
+        XCTAssertEqual(LoginUseCase.normalizedIdentifier("  User@Example.com "), "user@example.com")
+    }
+
+    func test_phone_isDigitsOnly() {
+        XCTAssertEqual(LoginUseCase.normalizedIdentifier("091 234 5678"), "0912345678")
+        XCTAssertEqual(LoginUseCase.normalizedIdentifier("+84 912 345 678"), "0912345678")
+    }
+
+    func test_otherUsername_isOnlyTrimmed() {
+        XCTAssertEqual(LoginUseCase.normalizedIdentifier(" demo "), "demo")
+    }
+}

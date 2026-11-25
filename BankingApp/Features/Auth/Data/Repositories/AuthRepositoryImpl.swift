@@ -15,7 +15,7 @@ final class AuthRepositoryImpl: AuthRepository {
         do {
             let info = device.current
             let request = LoginRequestDTO(
-                email: username,
+                identifier: username,
                 password: password,
                 deviceId: info.id,
                 deviceName: info.name,

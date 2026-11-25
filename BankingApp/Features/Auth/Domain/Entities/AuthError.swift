@@ -14,7 +14,7 @@ enum AuthError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .emptyUsername: return "Vui lòng nhập tên đăng nhập."
+        case .emptyUsername: return "Vui lòng nhập email hoặc số điện thoại."
         case .invalidPassword: return "Mật khẩu phải có ít nhất 6 ký tự."
         case .invalidCredentials: return "Tên đăng nhập hoặc mật khẩu không đúng."
         case .biometricUnavailable: return "Thiết bị chưa hỗ trợ hoặc chưa bật sinh trắc học."

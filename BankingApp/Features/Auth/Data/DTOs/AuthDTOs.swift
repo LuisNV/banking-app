@@ -1,8 +1,9 @@
 import Foundation
 
-/// Body: `{"email", "password", "deviceId", "deviceName", "platform"}`.
+/// Body: `{"identifier", "password", "deviceId", "deviceName", "platform"}`.
 struct LoginRequestDTO: Encodable, Equatable {
-    let email: String
+    /// Email hoặc số điện thoại.
+    let identifier: String
     let password: String
     /// UUID cố định của máy (`DeviceInfo.id`).
     let deviceId: String

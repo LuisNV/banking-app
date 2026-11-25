@@ -2,12 +2,10 @@ import SwiftUI
 
 /// Đổi mật khẩu: mở toàn màn hình từ tab Cá nhân (che thanh tab), có NavigationStack riêng.
 struct ChangePasswordView: View {
-    @State private var viewModel: ChangePasswordViewModel
+    // Tạo ViewModel ngay trong @State (không dùng giá trị mặc định của tham số init:
+    // ViewModel thuộc MainActor nên tạo ở đó dễ báo lỗi biên dịch).
+    @State private var viewModel = ChangePasswordViewModel()
     @Environment(\.dismiss) private var dismiss
-
-    init(viewModel: ChangePasswordViewModel = ChangePasswordViewModel()) {
-        _viewModel = State(initialValue: viewModel)
-    }
 
     var body: some View {
         NavigationStack {
@@ -87,7 +85,7 @@ private struct ChangePasswordFormStep: View {
                         "Mật khẩu hiện tại",
                         systemImage: "lock.fill",
                         tint: Color(.systemGray),
-                        text: $viewModel.currentPassword,
+                        text: binding(\.currentPassword, field: .current),
                         status: viewModel.status(for: .current),
                         isSecure: true,
                         isRevealed: $viewModel.isCurrentRevealed,
@@ -105,7 +103,7 @@ private struct ChangePasswordFormStep: View {
                         "Mật khẩu mới",
                         systemImage: "key.fill",
                         tint: AppColor.brand,
-                        text: $viewModel.newPassword,
+                        text: binding(\.newPassword, field: .new),
                         status: viewModel.status(for: .new),
                         isSecure: true,
                         isRevealed: $viewModel.isNewRevealed,
@@ -120,7 +118,7 @@ private struct ChangePasswordFormStep: View {
                         "Nhập lại mật khẩu mới",
                         systemImage: "key.fill",
                         tint: AppColor.brand,
-                        text: $viewModel.confirmPassword,
+                        text: binding(\.confirmPassword, field: .confirm),
                         status: viewModel.status(for: .confirm),
                         isSecure: true,
                         isRevealed: $viewModel.isNewRevealed,
@@ -166,9 +164,6 @@ private struct ChangePasswordFormStep: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom, spacing: 0) { footer }
-        .onChange(of: viewModel.currentPassword) { _, _ in viewModel.didEdit(.current) }
-        .onChange(of: viewModel.newPassword) { _, _ in viewModel.didEdit(.new) }
-        .onChange(of: viewModel.confirmPassword) { _, _ in viewModel.didEdit(.confirm) }
         .onAppear { if viewModel.currentPassword.isEmpty { focused = .current } }
     }
 
@@ -190,6 +185,21 @@ private struct ChangePasswordFormStep: View {
     private func submit() {
         focused = nil
         Task { await viewModel.submit() }
+    }
+
+    /// Chỉ khi NGƯỜI DÙNG gõ mới bỏ lỗi server của ô đó. (Dùng `.onChange` thì cả lúc ViewModel
+    /// tự xoá ô sau lỗi "sai mật khẩu" cũng bị tính, làm câu "Bạn còn N lần thử" biến mất ngay.)
+    private func binding(
+        _ keyPath: ReferenceWritableKeyPath<ChangePasswordViewModel, String>,
+        field: PasswordChangeField
+    ) -> Binding<String> {
+        Binding(
+            get: { viewModel[keyPath: keyPath] },
+            set: { newValue in
+                viewModel[keyPath: keyPath] = newValue
+                viewModel.didEdit(field)
+            }
+        )
     }
 }
 
@@ -216,8 +226,7 @@ private struct ChangePasswordVerifyStep: View {
                     .padding(.top, 8)
                     .accessibilityAddTraits(.isHeader)
 
-                (Text("Để bảo vệ tài khoản, nhập mã \(ChangePasswordUseCase.codeLength) số đã gửi tới\n")
-                    + Text(viewModel.email).fontWeight(.semibold).foregroundColor(AppColor.textPrimary))
+                Text("Để bảo vệ tài khoản, nhập mã \(ChangePasswordUseCase.codeLength) số đã gửi tới\n\(emailText)")
                     .font(.body)
                     .foregroundStyle(AppColor.textSecondary)
                     .multilineTextAlignment(.center)
@@ -271,6 +280,10 @@ private struct ChangePasswordVerifyStep: View {
                 Task { await viewModel.verify() }
             }
         }
+    }
+
+    private var emailText: Text {
+        Text(viewModel.email).fontWeight(.semibold).foregroundColor(AppColor.textPrimary)
     }
 
     private var footer: some View {

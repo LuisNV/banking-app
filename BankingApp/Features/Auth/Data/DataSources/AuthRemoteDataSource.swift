@@ -36,7 +36,7 @@ final class MockAuthRemoteDataSource: AuthRemoteDataSource {
         guard request.password == Self.validPassword else {
             throw NetworkError.unauthorized
         }
-        return Self.response(username: request.email)
+        return Self.response(username: request.identifier)
     }
 
     func refresh(_ request: RefreshTokenRequestDTO) async throws -> AuthResponseDTO {
