@@ -44,7 +44,7 @@ struct PersonalInfoView: View {
             GroupedCard {
                 InfoRow(title: "Họ và tên", value: profile.fullName)
                 GroupedDivider(leadingInset: 16)
-                InfoRow(title: "Email", value: profile.email)
+                InfoRow(title: "Email", value: profile.email, badge: emailBadge(profile))
                 if let username = profile.username, username != profile.email {
                     GroupedDivider(leadingInset: 16)
                     InfoRow(title: "Tên đăng nhập", value: username)
@@ -53,6 +53,10 @@ struct PersonalInfoView: View {
                 InfoRow(title: "Số điện thoại", value: profile.phone)
                 GroupedDivider(leadingInset: 16)
                 InfoRow(title: "Ngày sinh", value: profile.birthDate.map(Self.formatBirthDate))
+                GroupedDivider(leadingInset: 16)
+                InfoRow(title: "Giới tính", value: profile.gender?.title)
+                GroupedDivider(leadingInset: 16)
+                InfoRow(title: "Địa chỉ", value: profile.address)
             }
 
             if let message = viewModel.profileErrorMessage {
@@ -70,6 +74,11 @@ struct PersonalInfoView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
         }
+    }
+
+    private func emailBadge(_ profile: UserProfile) -> InfoRow.Badge? {
+        guard profile.email != nil, let verified = profile.isEmailVerified else { return nil }
+        return verified ? .verified : .unverified
     }
 
     private func errorView(_ message: String) -> some View {
@@ -99,22 +108,47 @@ struct PersonalInfoView: View {
 }
 
 private struct InfoRow: View {
+    enum Badge {
+        case verified, unverified
+    }
+
     let title: String
     let value: String?
+    var badge: Badge?
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(title)
                 .foregroundStyle(AppColor.textSecondary)
             Spacer(minLength: 8)
-            Text(value ?? "Chưa cập nhật")
-                .foregroundStyle(value == nil ? AppColor.textTertiary : AppColor.textPrimary)
-                .multilineTextAlignment(.trailing)
-                .textSelection(.enabled)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(value ?? "Chưa cập nhật")
+                    .foregroundStyle(value == nil ? AppColor.textTertiary : AppColor.textPrimary)
+                    .multilineTextAlignment(.trailing)
+                    .textSelection(.enabled)
+                badgeView
+            }
         }
         .font(.body)
         .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(minHeight: 50)
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var badgeView: some View {
+        switch badge {
+        case .verified:
+            Label("Đã xác minh", systemImage: "checkmark.seal.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AppColor.success)
+        case .unverified:
+            Label("Chưa xác minh", systemImage: "exclamationmark.circle")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color(.systemOrange))
+        case nil:
+            EmptyView()
+        }
     }
 }

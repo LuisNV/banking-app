@@ -32,7 +32,10 @@ final class MockProfileRemoteDataSource: ProfileRemoteDataSource {
             username: "demo",
             phone: "0912345678",
             birthDate: "2000-05-20",
-            avatarUrl: nil
+            avatarUrl: nil,
+            address: "123 Lê Lợi, Q1, TP.HCM",
+            gender: "FEMALE",
+            emailVerified: true
         )
     }
 

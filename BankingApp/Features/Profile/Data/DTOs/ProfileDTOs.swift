@@ -6,6 +6,10 @@ import Foundation
 /// - `null` hoặc không có body
 struct AvatarResponseDTO: DefaultDecodable, Equatable {
     let avatarUrl: String?
+    let address: String?
+    /// "MALE" / "FEMALE" / "OTHER".
+    let gender: String?
+    let emailVerified: Bool?
 
     init() { avatarUrl = nil }
 
@@ -26,7 +30,12 @@ struct AvatarResponseDTO: DefaultDecodable, Equatable {
     }
 }
 
-/// `data` của `GET v1/auth/me`.
+/// `data` của `GET v1/auth/me`. Ví dụ server trả:
+/// ```json
+/// {"id": 1, "fullName": "Nguyen Van A", "email": "user@example.com", "phone": "0901234567",
+///  "address": "123 Le Loi, Q1, HCM", "gender": "MALE", "dateOfBirth": "1995-05-20",
+///  "avatarUrl": "https://res.cloudinary.com/...", "emailVerified": true}
+/// ```
 /// APIClient đã đổi snake_case → camelCase, nên `full_name` và `fullName` đều đọc được.
 /// Chấp nhận thêm vài tên khác (`name`, `phoneNumber`, `dateOfBirth`, `dob`, `avatar`)
 /// và `id` dạng số, để không phụ thuộc chặt vào backend.
@@ -47,7 +56,10 @@ struct UserProfileDTO: Decodable, Equatable {
         username: String?,
         phone: String?,
         birthDate: String?,
-        avatarUrl: String?
+        avatarUrl: String?,
+        address: String? = nil,
+        gender: String? = nil,
+        emailVerified: Bool? = nil
     ) {
         self.id = id
         self.fullName = fullName
@@ -56,6 +68,9 @@ struct UserProfileDTO: Decodable, Equatable {
         self.phone = phone
         self.birthDate = birthDate
         self.avatarUrl = avatarUrl
+        self.address = address
+        self.gender = gender
+        self.emailVerified = emailVerified
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -63,6 +78,7 @@ struct UserProfileDTO: Decodable, Equatable {
         case phone, phoneNumber
         case birthDate, dateOfBirth, dob, birthday
         case avatarUrl, avatar
+        case address, gender, emailVerified
     }
 
     init(from decoder: Decoder) throws {
@@ -87,6 +103,9 @@ struct UserProfileDTO: Decodable, Equatable {
             ?? container.decodeIfPresent(String.self, forKey: .birthday)
         avatarUrl = try container.decodeIfPresent(String.self, forKey: .avatarUrl)
             ?? container.decodeIfPresent(String.self, forKey: .avatar)
+        address = try container.decodeIfPresent(String.self, forKey: .address)
+        gender = try container.decodeIfPresent(String.self, forKey: .gender)
+        emailVerified = try container.decodeIfPresent(Bool.self, forKey: .emailVerified)
     }
 
     func toDomain() -> UserProfile {
@@ -97,7 +116,10 @@ struct UserProfileDTO: Decodable, Equatable {
             username: username.nilIfBlank,
             phone: phone.nilIfBlank,
             birthDate: birthDate.flatMap(Self.parseDate),
-            avatarURL: avatarUrl.nilIfBlank.flatMap(URL.init(string:))
+            avatarURL: avatarUrl.nilIfBlank.flatMap(URL.init(string:)),
+            address: address.nilIfBlank,
+            gender: gender.flatMap(UserProfile.Gender.init(apiValue:)),
+            isEmailVerified: emailVerified
         )
     }
 

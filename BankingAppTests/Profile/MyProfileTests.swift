@@ -25,6 +25,49 @@ final class MyProfileTests: XCTestCase {
         XCTAssertNil(sut.files)
     }
 
+    /// Đúng response mẫu của backend.
+    func test_decode_backendSample() throws {
+        let dto = try decodeEnvelope("""
+        {
+          "code": 0,
+          "httpStatus": 200,
+          "message": "Thành công",
+          "data": {
+            "id": 1,
+            "fullName": "Nguyen Van A",
+            "email": "user@example.com",
+            "phone": "0901234567",
+            "address": "123 Le Loi, Q1, HCM",
+            "gender": "MALE",
+            "dateOfBirth": "1995-05-20",
+            "avatarUrl": "https://res.cloudinary.com/demo/image/upload/a.jpg",
+            "emailVerified": true
+          },
+          "traceId": "abc"
+        }
+        """)
+        let profile = dto.toDomain()
+
+        XCTAssertEqual(profile.id, "1")
+        XCTAssertEqual(profile.fullName, "Nguyen Van A")
+        XCTAssertEqual(profile.email, "user@example.com")
+        XCTAssertNil(profile.username)
+        XCTAssertEqual(profile.phone, "0901234567")
+        XCTAssertEqual(profile.address, "123 Le Loi, Q1, HCM")
+        XCTAssertEqual(profile.gender, .male)
+        XCTAssertEqual(profile.gender?.title, "Nam")
+        XCTAssertEqual(profile.isEmailVerified, true)
+        XCTAssertEqual(profile.avatarURL?.absoluteString, "https://res.cloudinary.com/demo/image/upload/a.jpg")
+        let parts = Calendar.current.dateComponents([.year, .month, .day], from: try XCTUnwrap(profile.birthDate))
+        XCTAssertEqual([parts.year, parts.month, parts.day], [1995, 5, 20])
+    }
+
+    func test_gender_mapping() {
+        XCTAssertEqual(UserProfile.Gender(apiValue: "FEMALE"), .female)
+        XCTAssertEqual(UserProfile.Gender(apiValue: "other"), .other)
+        XCTAssertNil(UserProfile.Gender(apiValue: "UNKNOWN"))
+    }
+
     func test_decode_camelCase() throws {
         let dto = try decodeEnvelope("""
         {"code":0,"httpStatus":200,"message":"OK","traceId":"t","data":{
