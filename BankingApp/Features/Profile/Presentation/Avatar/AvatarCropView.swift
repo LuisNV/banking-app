@@ -79,7 +79,9 @@ struct AvatarCropView: View {
                 }
         }
         .background(Color.black.ignoresSafeArea())
-        .statusBarHidden()
+        // Không ẩn thanh trạng thái: khi ẩn, vùng an toàn phía trên bị thu lại và chữ hướng dẫn
+        // đè lên tai thỏ / Dynamic Island. Giao diện tối để giờ, pin hiện chữ trắng trên nền đen.
+        .preferredColorScheme(.dark)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Chỉnh ảnh đại diện")
     }
