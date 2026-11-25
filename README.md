@@ -49,6 +49,7 @@ POST {API_BASE_URL}/v1/auth/logout    body: {"refreshToken": "..."}
 POST {API_BASE_URL}/v1/users/me/avatar  multipart/form-data, field "file" (JPEG) + Bearer token
 ```
 
+- **Mở app**: còn refresh token trong Keychain thì vào thẳng Trang chủ (không gọi mạng), dùng thông tin user đã lưu lúc đăng nhập. Access token hết hạn thì request đầu tiên tự refresh; refresh bị từ chối thì về màn đăng nhập như mục *Hết phiên*.
 - **Refresh**: khi một API cần đăng nhập trả 401, `AuthInterceptor` gọi `refresh` (qua `AuthTokenRefresher`), lưu token mới rồi gửi lại request đó một lần. Nhiều request cùng 401 chỉ gọi refresh một lần. Refresh cũng được dùng khi đăng nhập bằng sinh trắc học.
 - **Hết phiên**: nếu refresh bị server từ chối (hoặc máy không còn refresh token), token bị xoá, app phát `Notification.Name.sessionExpired` và `AppRouter` đưa người dùng về màn đăng nhập kèm thông báo. Lỗi mạng tạm thời không làm người dùng bị đăng xuất.
 - **Upload file**: khai báo `files` (và `formFields` nếu cần) trong endpoint, `APIClient` sẽ gửi `multipart/form-data`. Ví dụ `Features/Profile/Data/Network/ProfileEndpoint.swift`. Ảnh đại diện được thu nhỏ còn cạnh dài 1024 px và nén JPEG trước khi gửi (`AvatarImageProcessor`), giới hạn 5 MB (`UploadAvatarUseCase.maxMegabytes`). `data` trả về có thể là chuỗi URL, object có `avatarUrl`/`url`, hoặc `null`.

@@ -1,3 +1,4 @@
+import Factory
 import Foundation
 import Observation
 
@@ -11,7 +12,7 @@ final class AppRouter {
         case home(User?)
     }
 
-    private(set) var route: Route = .login
+    private(set) var route: Route
     /// Điền sẵn ở màn đăng nhập (vd. email vừa đăng ký xong).
     private(set) var prefilledUsername: String?
     /// Thông báo hiện trên màn đăng nhập khi bị đẩy ra vì hết phiên.
@@ -20,6 +21,15 @@ final class AppRouter {
     var isShowingSessionExpired: Bool {
         get { sessionExpiredMessage != nil }
         set { if !newValue { sessionExpiredMessage = nil } }
+    }
+
+    /// Còn phiên đã lưu thì mở thẳng Trang chủ, không thì màn đăng nhập.
+    init(storedSession: GetStoredSessionUseCaseProtocol = Container.shared.getStoredSessionUseCase()) {
+        if let session = storedSession.execute() {
+            route = .home(session.user)
+        } else {
+            route = .login
+        }
     }
 
     func showHome(with session: AuthSession) {

@@ -6,6 +6,8 @@ protocol AuthRepository {
     /// Làm mới phiên từ refresh token đã lưu (dùng sau khi xác thực sinh trắc học).
     func restoreSession() async throws -> AuthSession
     func hasStoredSession() -> Bool
+    /// Người dùng của phiên đang lưu trên máy (nếu có).
+    func storedUser() -> User?
     func logout() async
 
     func rememberedUsername() -> String?

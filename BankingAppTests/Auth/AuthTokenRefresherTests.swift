@@ -13,6 +13,7 @@ private final class CountingRepository: AuthRepository {
 
     func login(username: String, password: String) async throws -> AuthSession { .stub() }
     func hasStoredSession() -> Bool { true }
+    func storedUser() -> User? { nil }
     func logout() async {}
     func rememberedUsername() -> String? { nil }
     func setRememberedUsername(_ username: String?) {}

@@ -56,6 +56,10 @@ extension Container {
         }
     }
 
+    var getStoredSessionUseCase: Factory<any GetStoredSessionUseCaseProtocol> {
+        self { GetStoredSessionUseCase(repository: self.authRepository()) }
+    }
+
     var logoutUseCase: Factory<any LogoutUseCaseProtocol> {
         self { LogoutUseCase(repository: self.authRepository()) }
     }

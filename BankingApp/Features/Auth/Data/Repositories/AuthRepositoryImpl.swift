@@ -14,6 +14,7 @@ final class AuthRepositoryImpl: AuthRepository {
             let dto = try await remote.login(LoginRequestDTO(email: username, password: password))
             let session = dto.toDomain()
             try local.saveTokens(accessToken: session.accessToken, refreshToken: session.refreshToken)
+            local.saveUser(session.user)
             return session
         } catch {
             throw Self.map(error, unauthorized: .invalidCredentials)
@@ -24,18 +25,36 @@ final class AuthRepositoryImpl: AuthRepository {
         guard let refreshToken = local.refreshToken else { throw AuthError.biometricNotEnrolled }
         do {
             let dto = try await remote.refresh(RefreshTokenRequestDTO(refreshToken: refreshToken))
-            let session = dto.toDomain()
+            var session = dto.toDomain()
             try local.saveTokens(accessToken: session.accessToken, refreshToken: session.refreshToken)
+            if let user = session.user {
+                local.saveUser(user)
+            } else if let saved = local.savedUser {
+                // Refresh không trả `user`: dùng thông tin đã lưu lúc đăng nhập.
+                session = AuthSession(
+                    user: saved,
+                    accessToken: session.accessToken,
+                    refreshToken: session.refreshToken,
+                    expiresAt: session.expiresAt
+                )
+            }
             return session
         } catch {
             let mapped = Self.map(error, unauthorized: .sessionExpired)
-            if mapped == .sessionExpired { local.clearTokens() }
+            if mapped == .sessionExpired {
+                local.clearTokens()
+                local.saveUser(nil)
+            }
             throw mapped
         }
     }
 
     func hasStoredSession() -> Bool {
         local.refreshToken != nil
+    }
+
+    func storedUser() -> User? {
+        local.savedUser
     }
 
     /// Gửi refresh token để server thu hồi, rồi xoá token trên máy.
@@ -47,6 +66,7 @@ final class AuthRepositoryImpl: AuthRepository {
             try? await remote.logout(LogoutRequestDTO(refreshToken: refreshToken))
         }
         local.clearTokens()
+        local.saveUser(nil)
     }
 
     func rememberedUsername() -> String? {

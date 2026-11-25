@@ -27,6 +27,8 @@ final class MockAuthRepository: AuthRepository {
 
     func restoreSession() async throws -> AuthSession { try restoreResult.get() }
     func hasStoredSession() -> Bool { storedSession }
+    var savedUser: User?
+    func storedUser() -> User? { savedUser }
     func logout() async { logoutCalled = true }
     func rememberedUsername() -> String? { savedUsername }
     func setRememberedUsername(_ username: String?) { savedUsername = username }

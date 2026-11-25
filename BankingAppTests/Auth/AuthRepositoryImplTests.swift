@@ -8,7 +8,7 @@ private final class StubRemote: AuthRemoteDataSource {
     private(set) var refreshRequests: [String] = []
     private(set) var logoutRequests: [String] = []
 
-    let response = AuthResponseDTO(
+    var response = AuthResponseDTO(
         accessToken: "a", refreshToken: "r", expiresIn: 60, tokenType: "Bearer",
         user: UserDTO(id: "1", fullName: "Demo", username: "demo")
     )
@@ -47,6 +47,9 @@ private final class InMemoryLocal: AuthLocalDataSource {
 
     func setRememberedUsername(_ username: String?) { rememberedUsername = username }
 
+    var savedUser: User?
+    func saveUser(_ user: User?) { savedUser = user }
+
     var isBiometricLoginEnabled = true
     func setBiometricLoginEnabled(_ enabled: Bool) { isBiometricLoginEnabled = enabled }
 }
@@ -61,6 +64,43 @@ final class AuthRepositoryImplTests: XCTestCase {
         XCTAssertEqual(session.user?.username, "demo")
         XCTAssertEqual(local.refreshToken, "r")
         XCTAssertTrue(sut.hasStoredSession())
+    }
+
+    func test_login_savesUser_andLogoutClearsIt() async throws {
+        let local = InMemoryLocal()
+        let sut = AuthRepositoryImpl(remote: StubRemote(), local: local)
+
+        _ = try await sut.login(username: "demo", password: "123456")
+        XCTAssertEqual(sut.storedUser(), User(id: "1", fullName: "Demo", username: "demo"))
+
+        await sut.logout()
+        XCTAssertNil(sut.storedUser())
+    }
+
+    func test_restore_withoutUserInResponse_usesSavedUser() async throws {
+        let remote = StubRemote()
+        remote.response = AuthResponseDTO(accessToken: "a", refreshToken: "r", expiresIn: 60, tokenType: "Bearer", user: nil)
+        let local = InMemoryLocal()
+        local.refreshToken = "old"
+        local.savedUser = User(id: "9", fullName: "Nguyễn Minh Anh", username: "minhanh@email.com")
+        let sut = AuthRepositoryImpl(remote: remote, local: local)
+
+        let session = try await sut.restoreSession()
+
+        XCTAssertEqual(session.user?.fullName, "Nguyễn Minh Anh")
+    }
+
+    func test_restore_unauthorized_clearsSavedUser() async {
+        let remote = StubRemote()
+        remote.refreshError = NetworkError.unauthorized
+        let local = InMemoryLocal()
+        local.refreshToken = "old"
+        local.savedUser = User(id: "9", fullName: "A", username: "a")
+        let sut = AuthRepositoryImpl(remote: remote, local: local)
+
+        _ = try? await sut.restoreSession()
+
+        XCTAssertNil(local.savedUser)
     }
 
     func test_login_unauthorized_mapsToInvalidCredentials() async {

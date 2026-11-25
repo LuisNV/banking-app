@@ -1,10 +1,39 @@
 import XCTest
 @testable import BankingApp
 
+private struct StubStoredSession: GetStoredSessionUseCaseProtocol {
+    let session: StoredSession?
+    func execute() -> StoredSession? { session }
+}
+
 @MainActor
 final class AppRouterTests: XCTestCase {
+    private func makeSUT(storedSession: StoredSession? = nil) -> AppRouter {
+        AppRouter(storedSession: StubStoredSession(session: storedSession))
+    }
+
+    func test_launch_withStoredSession_opensHome() {
+        let user = User(id: "1", fullName: "Nguyễn Minh Anh", username: "minhanh@email.com")
+        let sut = makeSUT(storedSession: StoredSession(user: user))
+
+        XCTAssertEqual(sut.route, .home(user))
+    }
+
+    func test_launch_withoutStoredSession_opensLogin() {
+        XCTAssertEqual(makeSUT().route, .login)
+    }
+
+    func test_launch_withStoredSession_thenExpired_returnsToLogin() {
+        let sut = makeSUT(storedSession: StoredSession(user: nil))
+
+        sut.handleSessionExpired()
+
+        XCTAssertEqual(sut.route, .login)
+        XCTAssertTrue(sut.isShowingSessionExpired)
+    }
+
     func test_sessionExpired_onHome_showsLoginWithMessage() {
-        let sut = AppRouter()
+        let sut = makeSUT()
         sut.showHome(with: .stub())
 
         sut.handleSessionExpired()
@@ -15,7 +44,7 @@ final class AppRouterTests: XCTestCase {
     }
 
     func test_sessionExpired_onLogin_doesNothing() {
-        let sut = AppRouter()
+        let sut = makeSUT()
 
         sut.handleSessionExpired()
 
@@ -24,7 +53,7 @@ final class AppRouterTests: XCTestCase {
     }
 
     func test_dismissAlert_clearsMessage() {
-        let sut = AppRouter()
+        let sut = makeSUT()
         sut.showHome(with: .stub())
         sut.handleSessionExpired()
 
@@ -34,7 +63,7 @@ final class AppRouterTests: XCTestCase {
     }
 
     func test_register_thenFinish_showsLoginWithPrefilledEmail() {
-        let sut = AppRouter()
+        let sut = makeSUT()
 
         sut.showRegister()
         XCTAssertEqual(sut.route, .register)
