@@ -184,3 +184,19 @@ final class AuthRepositoryImplTests: XCTestCase {
         XCTAssertEqual(String(data: data, encoding: .utf8), #"{"refreshToken":"x"}"#)
     }
 }
+
+final class AuthEndpointTests: XCTestCase {
+    /// Khớp với: POST {API_BASE_URL}/v1/auth/logout, body {"refreshToken": "..."}, không cần Bearer.
+    func test_logoutEndpoint_matchesBackendContract() throws {
+        let endpoint = AuthEndpoint.logout(LogoutRequestDTO(refreshToken: "rt-123"))
+
+        XCTAssertEqual(endpoint.path, "v1/auth/logout")
+        XCTAssertEqual(endpoint.method, .post)
+        XCTAssertFalse(endpoint.requiresAuth)
+        XCTAssertEqual(endpoint.timeout, 10)
+
+        let body = try XCTUnwrap(endpoint.body)
+        let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(AnyEncodable(body))) as? [String: String]
+        XCTAssertEqual(json, ["refreshToken": "rt-123"])
+    }
+}
