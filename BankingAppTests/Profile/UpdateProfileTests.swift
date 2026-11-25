@@ -195,7 +195,10 @@ final class UpdateProfileUseCaseTests: XCTestCase {
             .api(code: code, httpStatus: status, message: message, traceId: nil)
         }
         XCTAssertEqual(ProfileRepositoryImpl.mapUpdate(api(1001, 409)), .passwordRequired)
-        XCTAssertEqual(ProfileRepositoryImpl.mapUpdate(api(1002, 400)), .wrongPassword)
+        XCTAssertEqual(ProfileRepositoryImpl.mapUpdate(api(1002, 400, "Mật khẩu hiện tại không đúng. Bạn còn 3 lần thử")),
+                       .wrongPassword(message: "Mật khẩu hiện tại không đúng. Bạn còn 3 lần thử"))
+        XCTAssertEqual(ProfileRepositoryImpl.mapUpdate(api(1018, 429, "Vui lòng thử lại sau 15 phút")),
+                       .passwordLocked(message: "Vui lòng thử lại sau 15 phút"))
         XCTAssertEqual(ProfileRepositoryImpl.mapUpdate(api(1003, 409)), .emailTaken)
         XCTAssertEqual(ProfileRepositoryImpl.mapUpdate(api(1004, 409)), .phoneTaken)
         XCTAssertEqual(ProfileRepositoryImpl.mapUpdate(api(401, 401)), .sessionExpired)
@@ -303,7 +306,7 @@ final class EditProfileViewModelTests: XCTestCase {
     }
 
     func test_wrongPassword_keepsSheetOpen() async {
-        useCase.results = [.failure(ProfileUpdateError.wrongPassword)]
+        useCase.results = [.failure(ProfileUpdateError.wrongPassword(message: "Mật khẩu hiện tại không đúng. Bạn còn 4 lần thử"))]
         let sut = makeSUT()
         sut.email = "new@example.com"
         await sut.save()
@@ -312,7 +315,7 @@ final class EditProfileViewModelTests: XCTestCase {
         await sut.confirmPassword()
 
         XCTAssertTrue(sut.isShowingPasswordSheet)
-        XCTAssertEqual(sut.passwordError, ProfileUpdateError.wrongPassword.errorDescription)
+        XCTAssertEqual(sut.passwordError, "Mật khẩu hiện tại không đúng. Bạn còn 4 lần thử")
         XCTAssertEqual(sut.currentPassword, "")
         XCTAssertFalse(sut.didSave)
     }
@@ -343,6 +346,39 @@ final class EditProfileViewModelTests: XCTestCase {
 
         XCTAssertEqual(sut.error(for: .phone), ProfileUpdateError.phoneTaken.errorDescription)
         XCTAssertFalse(sut.didSave)
+    }
+
+    func test_passwordLocked_disablesConfirm_evenWithCorrectPassword() async {
+        useCase.results = [.failure(ProfileUpdateError.passwordLocked(
+            message: "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút"
+        ))]
+        let sut = makeSUT()
+        sut.email = "new@example.com"
+        await sut.save()
+        sut.currentPassword = "123456"
+
+        await sut.confirmPassword()
+
+        XCTAssertTrue(sut.isShowingPasswordSheet)
+        XCTAssertTrue(sut.isPasswordLocked)
+        XCTAssertEqual(sut.passwordError, "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút")
+
+        // Trong thời gian khoá: không gửi lên server dù nhập lại.
+        sut.currentPassword = "123456"
+        XCTAssertFalse(sut.canConfirmPassword)
+        await sut.confirmPassword()
+        XCTAssertEqual(useCase.calls.count, 1)
+
+        // Đóng rồi mở lại sheet vẫn thấy thông báo khoá.
+        sut.cancelPassword()
+        await sut.save()
+        XCTAssertNotNil(sut.passwordError)
+    }
+
+    func test_lockMinutes_parsedFromServerMessage() {
+        XCTAssertEqual(ProfileUpdateError.passwordLocked(message: "Vui lòng thử lại sau 15 phút").lockMinutes, 15)
+        XCTAssertNil(ProfileUpdateError.passwordLocked(message: "Tài khoản tạm khoá").lockMinutes)
+        XCTAssertNil(ProfileUpdateError.wrongPassword(message: "sau 3 phút").lockMinutes)
     }
 
     func test_passwordRequiredFromServer_opensSheet() async {

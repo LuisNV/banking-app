@@ -27,8 +27,8 @@ final class ProfileRemoteDataSourceImpl: ProfileRemoteDataSource {
 }
 
 /// Backend giả cho môi trường Debug (USE_MOCK_API = YES). Upload không trả URL nên UI hiện ảnh vừa chọn.
-/// Sửa hồ sơ: mật khẩu đúng là "123456"; email `taken@example.com` báo trùng (1003);
-/// số `0000000000` báo trùng (1004).
+/// Sửa hồ sơ: mật khẩu đúng là "123456"; sai 5 lần thì khoá 15 phút (1018);
+/// email `taken@example.com` báo trùng (1003); số `0000000000` báo trùng (1004).
 final class MockProfileRemoteDataSource: ProfileRemoteDataSource {
     private var current = UserProfileDTO(
         id: "u_001",
@@ -43,6 +43,11 @@ final class MockProfileRemoteDataSource: ProfileRemoteDataSource {
         emailVerified: true
     )
 
+    private static let maxPasswordAttempts = 5
+    private static let lockMinutes = 15
+    private var failedPasswordAttempts = 0
+    private var passwordLockedUntil: Date?
+
     func fetchMe() async throws -> UserProfileDTO {
         try await Task.sleep(for: .milliseconds(600))
         return current
@@ -54,11 +59,25 @@ final class MockProfileRemoteDataSource: ProfileRemoteDataSource {
         var verified = current.emailVerified
         if let newEmail = request.email, newEmail != current.email {
             guard let password = request.currentPassword, !password.isEmpty else {
+                // Không tính là một lần sai.
                 throw Self.error(1001, 409, "Vui lòng nhập mật khẩu hiện tại để đổi email")
             }
-            guard password == MockAuthRemoteDataSource.validPassword else {
-                throw Self.error(1002, 400, "Mật khẩu hiện tại không đúng")
+            if let lockedUntil = passwordLockedUntil, lockedUntil > Date() {
+                let minutes = Int((lockedUntil.timeIntervalSinceNow / 60).rounded(.up))
+                throw Self.error(1018, 429, "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau \(minutes) phút")
             }
+            guard password == MockAuthRemoteDataSource.validPassword else {
+                failedPasswordAttempts += 1
+                let remaining = Self.maxPasswordAttempts - failedPasswordAttempts
+                if remaining <= 0 {
+                    failedPasswordAttempts = 0
+                    passwordLockedUntil = Date().addingTimeInterval(TimeInterval(Self.lockMinutes * 60))
+                    throw Self.error(1018, 429, "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau \(Self.lockMinutes) phút")
+                }
+                throw Self.error(1002, 400, "Mật khẩu hiện tại không đúng. Bạn còn \(remaining) lần thử")
+            }
+            failedPasswordAttempts = 0
+            passwordLockedUntil = nil
             guard newEmail != "taken@example.com" else {
                 throw Self.error(1003, 409, "Email đã được sử dụng")
             }

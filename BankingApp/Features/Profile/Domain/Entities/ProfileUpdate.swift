@@ -94,10 +94,12 @@ enum ProfileUpdateValidator {
 enum ProfileUpdateError: LocalizedError, Equatable {
     /// Lỗi kiểm tra phía app.
     case invalid([ProfileField: String])
-    /// 1001: đổi email nhưng thiếu mật khẩu.
+    /// 1001: đổi email nhưng thiếu mật khẩu (không tính là một lần sai).
     case passwordRequired
-    /// 1002: mật khẩu hiện tại sai.
-    case wrongPassword
+    /// 1002: mật khẩu hiện tại sai, kèm câu của server "… Bạn còn N lần thử".
+    case wrongPassword(message: String?)
+    /// 1018: sai quá nhiều lần, đang bị khoá ("… thử lại sau N phút"), kể cả khi nhập đúng mật khẩu.
+    case passwordLocked(message: String?)
     /// 1003: email đã có người dùng.
     case emailTaken
     /// 1004: số điện thoại đã có người dùng.
@@ -115,7 +117,10 @@ enum ProfileUpdateError: LocalizedError, Equatable {
         switch self {
         case .invalid: return "Vui lòng kiểm tra lại thông tin."
         case .passwordRequired: return "Vui lòng nhập mật khẩu hiện tại để đổi email."
-        case .wrongPassword: return "Mật khẩu hiện tại không đúng."
+        case .wrongPassword(let message):
+            return Self.nonEmpty(message) ?? "Mật khẩu hiện tại không đúng."
+        case .passwordLocked(let message):
+            return Self.nonEmpty(message) ?? "Bạn đã nhập sai mật khẩu quá nhiều lần. Vui lòng thử lại sau."
         case .emailTaken: return "Email này đã được sử dụng."
         case .phoneTaken: return "Số điện thoại này đã được sử dụng."
         case .sessionExpired: return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
@@ -124,5 +129,18 @@ enum ProfileUpdateError: LocalizedError, Equatable {
         case .api(let message): return message
         case .unknown: return "Không thể lưu thông tin. Vui lòng thử lại."
         }
+    }
+
+    /// Số phút bị khoá đọc từ câu của server ("… thử lại sau 15 phút"); `nil` nếu không đọc được.
+    var lockMinutes: Int? {
+        guard case .passwordLocked(let message?) = self,
+              let range = message.range(of: #"\d+(?=\s*phút)"#, options: .regularExpression)
+        else { return nil }
+        return Int(message[range])
+    }
+
+    private static func nonEmpty(_ text: String?) -> String? {
+        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return text
     }
 }

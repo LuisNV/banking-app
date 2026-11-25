@@ -257,6 +257,7 @@ private struct PasswordConfirmSheet: View {
                         onSubmit: confirm
                     )
                     .focused($isFocused)
+                    .disabled(viewModel.isPasswordLocked)
                 }
                 if let error = viewModel.passwordError {
                     Label(error, systemImage: "exclamationmark.circle")
@@ -266,9 +267,9 @@ private struct PasswordConfirmSheet: View {
                 }
             }
 
-            Button("Xác nhận", action: confirm)
+            Button(viewModel.isPasswordLocked ? "Tạm khoá" : "Xác nhận", action: confirm)
                 .buttonStyle(PrimaryButtonStyle(isLoading: viewModel.isSaving, isPill: true))
-                .disabled(viewModel.isSaving || viewModel.currentPassword.isEmpty)
+                .disabled(!viewModel.canConfirmPassword)
         }
         .padding(.horizontal, 20)
         .padding(.top, 24)

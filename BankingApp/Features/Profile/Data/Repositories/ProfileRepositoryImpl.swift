@@ -42,7 +42,8 @@ final class ProfileRepositoryImpl: ProfileRepository {
         case .api(let code, let httpStatus, let message, _):
             switch code {
             case 1001: return .passwordRequired
-            case 1002: return .wrongPassword
+            case 1002: return .wrongPassword(message: message)
+            case 1018: return .passwordLocked(message: message)
             case 1003: return .emailTaken
             case 1004: return .phoneTaken
             default: break

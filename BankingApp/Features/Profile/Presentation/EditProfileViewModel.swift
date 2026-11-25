@@ -19,6 +19,9 @@ final class EditProfileViewModel {
     var currentPassword = ""
     var isPasswordRevealed = false
     private(set) var passwordError: String?
+    /// Bị khoá nhập mật khẩu (1018) tới lúc này: chưa hết hạn thì không gửi lên server.
+    private(set) var passwordLockedUntil: Date?
+    private var unlockTask: Task<Void, Never>?
 
     // MARK: Trạng thái
     private(set) var isSaving = false
@@ -123,15 +126,25 @@ final class EditProfileViewModel {
         guard errors.isEmpty else { return }
         if isChangingEmail {
             currentPassword = ""
-            passwordError = nil
+            if !isPasswordLocked { passwordError = nil }
             isShowingPasswordSheet = true
             return
         }
         await submit(password: nil)
     }
 
+    var isPasswordLocked: Bool {
+        guard let passwordLockedUntil else { return false }
+        return passwordLockedUntil > now()
+    }
+
+    var canConfirmPassword: Bool {
+        !isSaving && !isPasswordLocked && !currentPassword.isEmpty
+    }
+
     /// Bấm "Xác nhận" trong bottom sheet.
     func confirmPassword() async {
+        guard !isPasswordLocked else { return }
         guard !currentPassword.isEmpty else {
             passwordError = ProfileUpdateError.passwordRequired.errorDescription
             return
@@ -142,7 +155,8 @@ final class EditProfileViewModel {
     func cancelPassword() {
         isShowingPasswordSheet = false
         currentPassword = ""
-        passwordError = nil
+        // Đang bị khoá thì giữ thông báo để mở lại sheet vẫn thấy.
+        if !isPasswordLocked { passwordError = nil }
     }
 
     private func submit(password: String?) async {
@@ -157,6 +171,7 @@ final class EditProfileViewModel {
             let profile = try await updateUseCase.execute(update, currentEmail: original.email)
             isShowingPasswordSheet = false
             currentPassword = ""
+            clearPasswordLock()
             didSave = true
             onSaved(profile)
         } catch let error as ProfileUpdateError {
@@ -175,9 +190,17 @@ final class EditProfileViewModel {
             passwordError = error.errorDescription
             isShowingPasswordSheet = true
         case .wrongPassword:
-            // Giữ sheet mở để nhập lại.
+            // Giữ sheet mở để nhập lại; câu lỗi của server có "Bạn còn N lần thử".
             passwordError = error.errorDescription
             currentPassword = ""
+        case .passwordLocked:
+            // Đang bị khoá: kể cả mật khẩu đúng cũng bị từ chối, nên khoá nút Xác nhận tới khi hết hạn.
+            passwordError = error.errorDescription
+            currentPassword = ""
+            isShowingPasswordSheet = true
+            if let minutes = error.lockMinutes {
+                lockPassword(until: now().addingTimeInterval(TimeInterval(minutes * 60)))
+            }
         case .emailTaken:
             isShowingPasswordSheet = false
             serverFieldErrors[.email] = error.errorDescription
@@ -197,6 +220,26 @@ final class EditProfileViewModel {
                 alertMessage = error.errorDescription
             }
         }
+    }
+
+    private func lockPassword(until date: Date) {
+        passwordLockedUntil = date
+        unlockTask?.cancel()
+        let delay = date.timeIntervalSince(now())
+        unlockTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(0, delay)))
+            guard !Task.isCancelled else { return }
+            self?.clearPasswordLock()
+        }
+    }
+
+    /// Hết thời gian khoá (hoặc đổi thành công): cho nhập lại.
+    private func clearPasswordLock() {
+        unlockTask?.cancel()
+        unlockTask = nil
+        guard passwordLockedUntil != nil else { return }
+        passwordLockedUntil = nil
+        passwordError = nil
     }
 
     private func value(of field: ProfileField) -> String {
