@@ -12,6 +12,9 @@ struct PersonalInfoView: View {
                     Text(viewModel.fullName ?? "—")
                         .font(.title3.bold())
                         .multilineTextAlignment(.center)
+                    if let profile = viewModel.profile, isEmailUnverified(profile) {
+                        UnverifiedEmailNotice()
+                    }
                 }
                 .frame(maxWidth: .infinity)
 
@@ -48,23 +51,37 @@ struct PersonalInfoView: View {
 
     private func details(_ profile: UserProfile) -> some View {
         VStack(spacing: 8) {
+            // Biểu tượng và màu giống màn Sửa thông tin.
             GroupedCard {
-                InfoRow(title: "Họ và tên", value: profile.fullName)
-                GroupedDivider(leadingInset: 16)
-                InfoRow(title: "Email", value: profile.email, badge: emailBadge(profile))
+                InfoRow(title: "Họ và tên", systemImage: "person.fill", tint: Color(.systemBlue),
+                        value: profile.fullName)
+                GroupedDivider()
+                InfoRow(title: "Số điện thoại", systemImage: "phone.fill", tint: Color(.systemGreen),
+                        value: profile.phone)
+                GroupedDivider()
+                InfoRow(title: "Email", systemImage: "envelope.fill", tint: Color(.systemIndigo),
+                        value: profile.email)
                 if let username = profile.username, username != profile.email {
-                    GroupedDivider(leadingInset: 16)
-                    InfoRow(title: "Tên đăng nhập", value: username)
+                    GroupedDivider()
+                    InfoRow(title: "Tên đăng nhập", systemImage: "at", tint: Color(.systemTeal),
+                            value: username)
                 }
-                GroupedDivider(leadingInset: 16)
-                InfoRow(title: "Số điện thoại", value: profile.phone)
-                GroupedDivider(leadingInset: 16)
-                InfoRow(title: "Ngày sinh", value: profile.birthDate.map(Self.formatBirthDate))
-                GroupedDivider(leadingInset: 16)
-                InfoRow(title: "Giới tính", value: profile.gender?.title)
-                GroupedDivider(leadingInset: 16)
-                InfoRow(title: "Địa chỉ", value: profile.address)
             }
+
+            GroupedCard {
+                InfoRow(title: "Địa chỉ", systemImage: "house.fill", tint: Color(.systemOrange),
+                        value: profile.address)
+            }
+            .padding(.top, 12)
+
+            GroupedCard {
+                InfoRow(title: "Giới tính", systemImage: "person.2.fill", tint: Color(.systemPurple),
+                        value: profile.gender?.title)
+                GroupedDivider()
+                InfoRow(title: "Ngày sinh", systemImage: "calendar", tint: Color(.systemRed),
+                        value: profile.birthDate.map(Self.formatBirthDate))
+            }
+            .padding(.top, 12)
 
             if let message = viewModel.profileErrorMessage {
                 // Tải lại thất bại: vẫn giữ dữ liệu cũ, chỉ báo nhẹ.
@@ -74,13 +91,12 @@ struct PersonalInfoView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
             }
-
         }
     }
 
-    private func emailBadge(_ profile: UserProfile) -> InfoRow.Badge? {
-        guard profile.email != nil, let verified = profile.isEmailVerified else { return nil }
-        return verified ? .verified : .unverified
+    /// Chỉ báo khi server nói rõ `emailVerified = false`.
+    private func isEmailUnverified(_ profile: UserProfile) -> Bool {
+        profile.email != nil && profile.isEmailVerified == false
     }
 
     private func errorView(_ message: String) -> some View {
@@ -109,48 +125,47 @@ struct PersonalInfoView: View {
     }
 }
 
+/// Một dòng thông tin: ô biểu tượng + nhãn + giá trị.
 private struct InfoRow: View {
-    enum Badge {
-        case verified, unverified
-    }
-
     let title: String
+    let systemImage: String
+    let tint: Color
     let value: String?
-    var badge: Badge?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(alignment: .center, spacing: 14) {
+            IconTile(systemImage: systemImage, tint: tint)
             Text(title)
                 .foregroundStyle(AppColor.textSecondary)
+                .fixedSize()
             Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(value ?? "Chưa cập nhật")
-                    .foregroundStyle(value == nil ? AppColor.textTertiary : AppColor.textPrimary)
-                    .multilineTextAlignment(.trailing)
-                    .textSelection(.enabled)
-                badgeView
-            }
+            Text(value ?? "Chưa cập nhật")
+                .foregroundStyle(value == nil ? AppColor.textTertiary : AppColor.textPrimary)
+                .multilineTextAlignment(.trailing)
+                .textSelection(.enabled)
         }
         .font(.body)
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(minHeight: 50)
+        .padding(.vertical, 11)
+        .frame(minHeight: 52)
         .accessibilityElement(children: .combine)
     }
+}
 
-    @ViewBuilder
-    private var badgeView: some View {
-        switch badge {
-        case .verified:
-            Label("Đã xác minh", systemImage: "checkmark.seal.fill")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(AppColor.success)
-        case .unverified:
-            Label("Chưa xác minh", systemImage: "exclamationmark.circle")
-                .font(.caption.weight(.semibold))
+/// Thông báo email chưa xác minh, hiện dưới tên người dùng.
+private struct UnverifiedEmailNotice: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(Color(.systemOrange))
-        case nil:
-            EmptyView()
+                .accessibilityHidden(true)
+            Text("Email chưa xác minh")
+                .foregroundStyle(AppColor.textPrimary)
         }
+        .font(.footnote.weight(.semibold))
+        .padding(.horizontal, 12)
+        .frame(height: 30)
+        .background(Capsule().fill(Color(.systemOrange).opacity(0.15)))
+        .accessibilityElement(children: .combine)
     }
 }
