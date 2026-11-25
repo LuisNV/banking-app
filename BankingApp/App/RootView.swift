@@ -23,7 +23,8 @@ struct RootView: View {
                 RegisterView(
                     viewModel: RegisterViewModel(
                         onCancel: { [router] in router.showLogin() },
-                        onFinished: { [router] email in router.showLogin(prefilledUsername: email) }
+                        // Đăng ký xong server trả token: vào thẳng app.
+                        onFinished: { [router] session in router.showHome(with: session) }
                     )
                 )
                 .transition(.move(edge: .trailing))

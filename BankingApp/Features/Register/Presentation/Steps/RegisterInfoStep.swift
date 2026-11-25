@@ -62,7 +62,7 @@ struct RegisterInfoStep: View {
                         DatePicker(
                             "Ngày sinh",
                             selection: $viewModel.birthDate,
-                            in: ...Date(),
+                            in: ...Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
                             displayedComponents: .date
                         )
                         .tint(AppColor.brand)
@@ -80,15 +80,19 @@ struct RegisterInfoStep: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom, spacing: 0) { footer }
+        // Sửa ô nào thì bỏ lỗi "đã được dùng" của server ở ô đó.
+        .onChange(of: viewModel.email) { _, _ in viewModel.didEdit(.email) }
+        .onChange(of: viewModel.phone) { _, _ in viewModel.didEdit(.phone) }
     }
 
     private var footer: some View {
         VStack(spacing: 12) {
-            Button("Tiếp tục") {
+            Button(viewModel.isLoading ? "Đang kiểm tra…" : "Tiếp tục") {
                 focusedField = nil
-                viewModel.continueFromInfo()
+                Task { await viewModel.continueFromInfo() }
             }
-            .buttonStyle(PrimaryButtonStyle(isPill: true))
+            .buttonStyle(PrimaryButtonStyle(isLoading: viewModel.isLoading, isPill: true))
+            .disabled(viewModel.isLoading)
 
             HStack(spacing: 4) {
                 Text("Đã có tài khoản?").foregroundStyle(AppColor.textSecondary)

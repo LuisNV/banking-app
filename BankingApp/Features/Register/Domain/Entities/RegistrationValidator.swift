@@ -2,6 +2,8 @@ import Foundation
 
 /// Kiểm tra thông tin đăng ký. Thuần logic, không phụ thuộc UI hay mạng nên dễ test.
 enum RegistrationValidator {
+    static let maxFullName = 150
+
     /// Trả về lỗi theo từng trường; rỗng nghĩa là hợp lệ.
     static func errors(for info: RegistrationInfo, now: Date = Date()) -> [RegistrationField: String] {
         var errors: [RegistrationField: String] = [:]
@@ -11,6 +13,8 @@ enum RegistrationValidator {
             errors[.fullName] = "Vui lòng nhập họ và tên."
         } else if name.count < 2 {
             errors[.fullName] = "Họ và tên quá ngắn."
+        } else if name.count > maxFullName {
+            errors[.fullName] = "Họ và tên tối đa \(maxFullName) ký tự."
         }
 
         let email = normalizedEmail(info.email)
@@ -27,7 +31,8 @@ enum RegistrationValidator {
             errors[.phone] = "Số điện thoại cần đủ 10 chữ số, bắt đầu bằng 0."
         }
 
-        if info.birthDate > now {
+        // Server yêu cầu ngày sinh ở trong quá khứ (trước hôm nay).
+        if Calendar.current.startOfDay(for: info.birthDate) >= Calendar.current.startOfDay(for: now) {
             errors[.birthDate] = "Ngày sinh không hợp lệ."
         }
         return errors

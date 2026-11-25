@@ -14,7 +14,7 @@ struct RegisterView: View {
                 RegisterTopBar(
                     stepNumber: number,
                     stepCount: RegisterViewModel.Step.numberedCount,
-                    onBack: viewModel.goBack
+                    onBack: { viewModel.goBack() }
                 )
             }
 
@@ -34,6 +34,13 @@ struct RegisterView: View {
         }
         .background(AppColor.background)
         .animation(.snappy(duration: 0.35), value: viewModel.step)
+        // Thoát app giữa chừng rồi mở lại: tiếp tục đúng bước của phiên còn hạn.
+        .task { await viewModel.resumeIfNeeded() }
+        .overlay {
+            if viewModel.isResuming {
+                LoadingOverlay(message: "Đang tải phiên đăng ký…")
+            }
+        }
         .alert(
             viewModel.errorTitle,
             isPresented: $viewModel.isShowingError,

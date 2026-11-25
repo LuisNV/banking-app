@@ -9,6 +9,8 @@ protocol AuthRepository {
     /// Người dùng của phiên đang lưu trên máy (nếu có).
     func storedUser() -> User?
     func logout() async
+    /// Lưu phiên có sẵn (vd. vừa đăng ký xong, server trả token) để vào app luôn.
+    func saveSession(_ session: AuthSession) throws
 
     func rememberedUsername() -> String?
     func setRememberedUsername(_ username: String?)

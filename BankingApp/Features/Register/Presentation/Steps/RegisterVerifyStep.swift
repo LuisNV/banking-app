@@ -48,6 +48,9 @@ struct RegisterVerifyStep: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) { footer }
+        .sheet(isPresented: $viewModel.isShowingChangeEmail) {
+            ChangeEmailSheet(viewModel: viewModel)
+        }
         .onChange(of: viewModel.code) { _, code in
             if code.count == RegisterUseCase.codeLength {
                 Task { await viewModel.verify() }
@@ -67,7 +70,7 @@ struct RegisterVerifyStep: View {
 
     private var footer: some View {
         VStack(spacing: 8) {
-            Text("Không thấy email? Kiểm tra thư mục Spam. Mã có hiệu lực 10 phút.")
+            Text("Không thấy email? Kiểm tra thư mục Spam. \(viewModel.codeValidityText)")
                 .font(.footnote)
                 .foregroundStyle(AppColor.textSecondary)
                 .multilineTextAlignment(.center)
@@ -78,7 +81,7 @@ struct RegisterVerifyStep: View {
             .buttonStyle(PrimaryButtonStyle(isLoading: viewModel.isLoading, isPill: true))
             .disabled(!viewModel.canVerify)
 
-            Button("Đổi địa chỉ email", action: viewModel.changeEmail)
+            Button("Đổi địa chỉ email") { viewModel.showChangeEmail() }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(AppColor.brand)
                 .frame(minHeight: 44)
@@ -103,5 +106,74 @@ private struct CapsuleChipStyle: ButtonStyle {
             .opacity(configuration.isPressed ? 0.7 : 1)
             .contentShape(Capsule())
             .frame(minHeight: 44)
+    }
+}
+
+/// Bottom sheet đổi địa chỉ email nhận mã (`PUT /registrations/{id}/email`).
+private struct ChangeEmailSheet: View {
+    @Bindable var viewModel: RegisterViewModel
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Đổi địa chỉ email")
+                        .font(.title3.bold())
+                    Text("Mã xác minh mới sẽ được gửi ngay tới email này.")
+                        .font(.subheadline)
+                        .foregroundStyle(AppColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 12)
+                CircleIconButton(
+                    systemImage: "xmark",
+                    accessibilityLabel: "Đóng",
+                    foreground: AppColor.textSecondary,
+                    size: 32,
+                    action: { viewModel.isShowingChangeEmail = false }
+                )
+                .disabled(viewModel.isChangingEmail)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                GroupedCard {
+                    FormFieldRow(
+                        "Email mới",
+                        systemImage: "envelope.fill",
+                        tint: Color(.systemIndigo),
+                        text: $viewModel.newEmail,
+                        status: viewModel.changeEmailError == nil ? .none : .invalid,
+                        textContentType: .emailAddress,
+                        keyboardType: .emailAddress,
+                        submitLabel: .send,
+                        onSubmit: submit
+                    )
+                    .focused($isFocused)
+                }
+                if let error = viewModel.changeEmailError {
+                    Label(error, systemImage: "exclamationmark.circle")
+                        .font(.footnote)
+                        .foregroundStyle(AppColor.danger)
+                        .padding(.horizontal, 4)
+                }
+            }
+
+            Button(viewModel.isChangingEmail ? "Đang gửi mã…" : "Gửi mã tới email mới", action: submit)
+                .buttonStyle(PrimaryButtonStyle(isLoading: viewModel.isChangingEmail, isPill: true))
+                .disabled(!viewModel.canSubmitNewEmail)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .padding(.bottom, 12)
+        .presentationDetents([.height(320)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .interactiveDismissDisabled(viewModel.isChangingEmail)
+        .onAppear { isFocused = true }
+    }
+
+    private func submit() {
+        Task { await viewModel.submitNewEmail() }
     }
 }

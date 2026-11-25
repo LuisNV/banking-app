@@ -51,7 +51,7 @@ struct RegisterDoneStep: View {
 
             Spacer()
 
-            Button("Đăng nhập ngay", action: viewModel.finish)
+            Button("Bắt đầu học") { viewModel.finish() }
                 .buttonStyle(PrimaryButtonStyle(isPill: true))
                 .padding(.horizontal, 4)
         }

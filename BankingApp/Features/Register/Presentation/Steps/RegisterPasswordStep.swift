@@ -54,6 +54,20 @@ struct RegisterPasswordStep: View {
                     GroupedFooter(text: "Mật khẩu nhập lại chưa khớp.", isError: true)
                 }
 
+                if viewModel.biometricType != .none {
+                    GroupedCard {
+                        HStack(spacing: 14) {
+                            IconTile(systemImage: viewModel.biometricType.systemImage, tint: Color(.systemGreen))
+                            Toggle("Đăng nhập bằng \(viewModel.biometricType.displayName)", isOn: $viewModel.biometricEnabled)
+                                .tint(AppColor.success)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: 52)
+                    }
+                    .padding(.top, 12)
+                    GroupedFooter(text: "Lần sau mở app, chỉ cần nhìn vào máy để đăng nhập.")
+                }
+
                 Text("Yêu cầu")
                     .font(.footnote)
                     .foregroundStyle(AppColor.textSecondary)
