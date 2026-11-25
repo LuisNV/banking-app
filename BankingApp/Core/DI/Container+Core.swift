@@ -26,6 +26,10 @@ extension Container {
         }.singleton
     }
 
+    var deviceInfoProvider: Factory<any DeviceInfoProviding> {
+        self { SystemDeviceInfoProvider() }.singleton
+    }
+
     var biometricAuthService: Factory<any BiometricAuthService> {
         self { LocalBiometricAuthService() }
     }

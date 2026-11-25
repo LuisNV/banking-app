@@ -20,7 +20,11 @@ extension Container {
 
     var authRepository: Factory<any AuthRepository> {
         self {
-            AuthRepositoryImpl(remote: self.authRemoteDataSource(), local: self.authLocalDataSource())
+            AuthRepositoryImpl(
+                remote: self.authRemoteDataSource(),
+                local: self.authLocalDataSource(),
+                device: self.deviceInfoProvider()
+            )
         }.singleton
     }
 

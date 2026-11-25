@@ -6,6 +6,7 @@ private final class StubRemote: AuthRemoteDataSource {
     var refreshError: Error?
     var logoutError: Error?
     private(set) var refreshRequests: [String] = []
+    private(set) var loginRequests: [LoginRequestDTO] = []
     private(set) var logoutRequests: [String] = []
 
     var response = AuthResponseDTO(
@@ -14,6 +15,7 @@ private final class StubRemote: AuthRemoteDataSource {
     )
 
     func login(_ request: LoginRequestDTO) async throws -> AuthResponseDTO {
+        loginRequests.append(request)
         if let loginError { throw loginError }
         return response
     }
@@ -27,6 +29,12 @@ private final class StubRemote: AuthRemoteDataSource {
     func logout(_ request: LogoutRequestDTO) async throws {
         logoutRequests.append(request.refreshToken)
         if let logoutError { throw logoutError }
+    }
+}
+
+private struct StubDevice: DeviceInfoProviding {
+    var current: DeviceInfo {
+        DeviceInfo(id: "3f2b8c1e-9a4d-4e7b-b1c2-5d6e7f809a1b", name: "iPhone 15 Pro", platform: "iOS 18.1")
     }
 }
 
@@ -57,7 +65,7 @@ private final class InMemoryLocal: AuthLocalDataSource {
 final class AuthRepositoryImplTests: XCTestCase {
     func test_login_savesTokens() async throws {
         let local = InMemoryLocal()
-        let sut = AuthRepositoryImpl(remote: StubRemote(), local: local)
+        let sut = AuthRepositoryImpl(remote: StubRemote(), local: local, device: StubDevice())
 
         let session = try await sut.login(username: "demo", password: "123456")
 
@@ -68,7 +76,7 @@ final class AuthRepositoryImplTests: XCTestCase {
 
     func test_login_savesUser_andLogoutClearsIt() async throws {
         let local = InMemoryLocal()
-        let sut = AuthRepositoryImpl(remote: StubRemote(), local: local)
+        let sut = AuthRepositoryImpl(remote: StubRemote(), local: local, device: StubDevice())
 
         _ = try await sut.login(username: "demo", password: "123456")
         XCTAssertEqual(sut.storedUser(), User(id: "1", fullName: "Demo", username: "demo"))
@@ -83,7 +91,7 @@ final class AuthRepositoryImplTests: XCTestCase {
         let local = InMemoryLocal()
         local.refreshToken = "old"
         local.savedUser = User(id: "9", fullName: "Nguyễn Minh Anh", username: "minhanh@email.com")
-        let sut = AuthRepositoryImpl(remote: remote, local: local)
+        let sut = AuthRepositoryImpl(remote: remote, local: local, device: StubDevice())
 
         let session = try await sut.restoreSession()
 
@@ -96,17 +104,40 @@ final class AuthRepositoryImplTests: XCTestCase {
         let local = InMemoryLocal()
         local.refreshToken = "old"
         local.savedUser = User(id: "9", fullName: "A", username: "a")
-        let sut = AuthRepositoryImpl(remote: remote, local: local)
+        let sut = AuthRepositoryImpl(remote: remote, local: local, device: StubDevice())
 
         _ = try? await sut.restoreSession()
 
         XCTAssertNil(local.savedUser)
     }
 
+    /// Khớp curl: {"email", "password", "deviceId", "deviceName", "platform"}.
+    func test_login_sendsDeviceInfo() async throws {
+        let remote = StubRemote()
+        let sut = AuthRepositoryImpl(remote: remote, local: InMemoryLocal(), device: StubDevice())
+
+        _ = try await sut.login(username: "user@example.com", password: "Matkhau123")
+
+        let request = try XCTUnwrap(remote.loginRequests.first)
+        let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: String]
+        XCTAssertEqual(json, [
+            "email": "user@example.com",
+            "password": "Matkhau123",
+            "deviceId": "3f2b8c1e-9a4d-4e7b-b1c2-5d6e7f809a1b",
+            "deviceName": "iPhone 15 Pro",
+            "platform": "iOS 18.1",
+        ])
+    }
+
+    func test_deviceMarketingName() {
+        XCTAssertEqual(SystemDeviceInfoProvider.marketingName(for: "iPhone16,1"), "iPhone 15 Pro")
+        XCTAssertEqual(SystemDeviceInfoProvider.marketingName(for: "iPhone99,9"), "iPhone (iPhone99,9)")
+    }
+
     func test_login_unauthorized_mapsToInvalidCredentials() async {
         let remote = StubRemote()
         remote.loginError = NetworkError.unauthorized
-        let sut = AuthRepositoryImpl(remote: remote, local: InMemoryLocal())
+        let sut = AuthRepositoryImpl(remote: remote, local: InMemoryLocal(), device: StubDevice())
         do {
             _ = try await sut.login(username: "demo", password: "x")
             XCTFail("Expected error")
@@ -120,7 +151,7 @@ final class AuthRepositoryImplTests: XCTestCase {
         remote.refreshError = NetworkError.unauthorized
         let local = InMemoryLocal()
         local.refreshToken = "old"
-        let sut = AuthRepositoryImpl(remote: remote, local: local)
+        let sut = AuthRepositoryImpl(remote: remote, local: local, device: StubDevice())
         do {
             _ = try await sut.restoreSession()
             XCTFail("Expected error")
@@ -134,7 +165,7 @@ final class AuthRepositoryImplTests: XCTestCase {
         let remote = StubRemote()
         let local = InMemoryLocal()
         local.refreshToken = "old"
-        let sut = AuthRepositoryImpl(remote: remote, local: local)
+        let sut = AuthRepositoryImpl(remote: remote, local: local, device: StubDevice())
 
         _ = try await sut.restoreSession()
 
@@ -148,7 +179,7 @@ final class AuthRepositoryImplTests: XCTestCase {
         let local = InMemoryLocal()
         local.accessToken = "access"
         local.refreshToken = "refresh"
-        let sut = AuthRepositoryImpl(remote: remote, local: local)
+        let sut = AuthRepositoryImpl(remote: remote, local: local, device: StubDevice())
 
         await sut.logout()
 
@@ -163,7 +194,7 @@ final class AuthRepositoryImplTests: XCTestCase {
         remote.logoutError = NetworkError.noConnection
         let local = InMemoryLocal()
         local.refreshToken = "refresh"
-        let sut = AuthRepositoryImpl(remote: remote, local: local)
+        let sut = AuthRepositoryImpl(remote: remote, local: local, device: StubDevice())
 
         await sut.logout()
 
@@ -172,7 +203,7 @@ final class AuthRepositoryImplTests: XCTestCase {
 
     func test_logout_withoutStoredToken_skipsRemoteCall() async {
         let remote = StubRemote()
-        let sut = AuthRepositoryImpl(remote: remote, local: InMemoryLocal())
+        let sut = AuthRepositoryImpl(remote: remote, local: InMemoryLocal(), device: StubDevice())
 
         await sut.logout()
 

@@ -3,15 +3,25 @@ import Foundation
 final class AuthRepositoryImpl: AuthRepository {
     private let remote: AuthRemoteDataSource
     private let local: AuthLocalDataSource
+    private let device: DeviceInfoProviding
 
-    init(remote: AuthRemoteDataSource, local: AuthLocalDataSource) {
+    init(remote: AuthRemoteDataSource, local: AuthLocalDataSource, device: DeviceInfoProviding) {
         self.remote = remote
         self.local = local
+        self.device = device
     }
 
     func login(username: String, password: String) async throws -> AuthSession {
         do {
-            let dto = try await remote.login(LoginRequestDTO(email: username, password: password))
+            let info = device.current
+            let request = LoginRequestDTO(
+                email: username,
+                password: password,
+                deviceId: info.id,
+                deviceName: info.name,
+                platform: info.platform
+            )
+            let dto = try await remote.login(request)
             let session = dto.toDomain()
             try local.saveTokens(accessToken: session.accessToken, refreshToken: session.refreshToken)
             local.saveUser(session.user)

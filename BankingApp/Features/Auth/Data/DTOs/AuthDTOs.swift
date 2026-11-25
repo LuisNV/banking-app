@@ -1,8 +1,15 @@
 import Foundation
 
-struct LoginRequestDTO: Encodable {
+/// Body: `{"email", "password", "deviceId", "deviceName", "platform"}`.
+struct LoginRequestDTO: Encodable, Equatable {
     let email: String
     let password: String
+    /// UUID cố định của máy (`DeviceInfo.id`).
+    let deviceId: String
+    /// Vd. "iPhone 15 Pro".
+    let deviceName: String
+    /// Vd. "iOS 18.1".
+    let platform: String
 }
 
 /// Body: `{"refreshToken": "..."}`

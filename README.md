@@ -43,7 +43,7 @@ open BankingApp.xcodeproj
 Mặc định Debug gọi `http://localhost:8081/api`. Đường dẫn ở `Features/Auth/Data/Network/AuthEndpoint.swift`, DTO ở `Features/Auth/Data/DTOs/AuthDTOs.swift`. Request gửi JSON `camelCase`.
 
 ```
-POST {API_BASE_URL}/v1/auth/login     body: {"email": "...", "password": "..."}
+POST {API_BASE_URL}/v1/auth/login     body: {"email", "password", "deviceId", "deviceName", "platform"}
 POST {API_BASE_URL}/v1/auth/refresh   body: {"refreshToken": "..."}
 POST {API_BASE_URL}/v1/auth/logout    body: {"refreshToken": "..."}
 GET  {API_BASE_URL}/v1/auth/me           Bearer token → thông tin tài khoản
@@ -52,6 +52,7 @@ POST {API_BASE_URL}/v1/users/me/avatar  multipart/form-data, field "file" (JPEG)
 ```
 
 - **Mở app**: còn refresh token trong Keychain thì vào thẳng Trang chủ (không gọi mạng), dùng thông tin user đã lưu lúc đăng nhập. Access token hết hạn thì request đầu tiên tự refresh; refresh bị từ chối thì về màn đăng nhập như mục *Hết phiên*.
+- **Thiết bị** (gửi khi đăng nhập, `Core/Device/DeviceInfo.swift`): `deviceId` là UUID tạo lần đầu rồi lưu trong Keychain (giữ nguyên qua các lần mở app và đăng xuất), `deviceName` là tên máy (vd. "iPhone 15 Pro", máy chưa có trong bảng thì kèm mã máy), `platform` dạng "iOS 18.1".
 - **Refresh**: khi một API cần đăng nhập trả 401, `AuthInterceptor` gọi `refresh` (qua `AuthTokenRefresher`), lưu token mới rồi gửi lại request đó một lần. Nhiều request cùng 401 chỉ gọi refresh một lần. Refresh cũng được dùng khi đăng nhập bằng sinh trắc học.
 - **Hết phiên**: nếu refresh bị server từ chối (hoặc máy không còn refresh token), token bị xoá, app phát `Notification.Name.sessionExpired` và `AppRouter` đưa người dùng về màn đăng nhập kèm thông báo. Lỗi mạng tạm thời không làm người dùng bị đăng xuất.
 - **Upload file**: khai báo `files` (và `formFields` nếu cần) trong endpoint, `APIClient` sẽ gửi `multipart/form-data`. Ví dụ `Features/Profile/Data/Network/ProfileEndpoint.swift`. Đổi ảnh đại diện: bấm vào ảnh ở tab Cá nhân hoặc màn Thông tin cá nhân → bottom sheet *Chụp ảnh* / *Chọn từ thư viện* → màn chỉnh ảnh (kéo, chụm để phóng to, chạm hai lần) cho vừa khung tròn → cắt thành ảnh vuông rồi upload (`Features/Profile/Presentation/Avatar`). Cần quyền camera (`NSCameraUsageDescription` trong `project.yml`); simulator không có camera nên nút Chụp ảnh bị tắt. Ảnh đại diện được thu nhỏ còn cạnh dài 1024 px và nén JPEG trước khi gửi (`AvatarImageProcessor`), giới hạn 5 MB (`UploadAvatarUseCase.maxMegabytes`). `data` trả về có thể là chuỗi URL, object có `avatarUrl`/`url`, hoặc `null`.
