@@ -63,15 +63,15 @@ struct ProfileTabView: View {
                     await viewModel.uploadAvatar(from: data)
                 }
             }
-            .confirmationDialog(
-                "Bạn muốn đăng xuất khỏi TingTing?",
-                isPresented: $isConfirmingLogout,
-                titleVisibility: .visible
-            ) {
+            // Dùng alert (không dùng confirmationDialog): từ iOS 26 confirmationDialog hiện dạng
+            // bong bóng và ẩn nút Huỷ, còn alert luôn là hộp thoại giữa màn hình có đủ hai nút.
+            .alert("Đăng xuất", isPresented: $isConfirmingLogout) {
+                Button("Huỷ", role: .cancel) {}
                 Button("Đăng xuất", role: .destructive) {
                     Task { await viewModel.logout() }
                 }
-                Button("Huỷ", role: .cancel) {}
+            } message: {
+                Text("Bạn có chắc muốn đăng xuất khỏi TingTing?")
             }
         }
     }
