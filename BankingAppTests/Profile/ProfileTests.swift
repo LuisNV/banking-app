@@ -7,6 +7,9 @@ import XCTest
 final class MockProfileRepository: ProfileRepository {
     var result: Result<URL?, Error> = .success(URL(string: "https://cdn.example.com/a.jpg"))
     private(set) var uploaded: [Data] = []
+    var profileResult: Result<UserProfile, Error> = .failure(ProfileError.loadFailed)
+
+    func currentProfile() async throws -> UserProfile { try profileResult.get() }
 
     func uploadAvatar(jpegData: Data) async throws -> URL? {
         uploaded.append(jpegData)
@@ -16,6 +19,9 @@ final class MockProfileRepository: ProfileRepository {
 
 private final class StubProfileRemote: ProfileRemoteDataSource {
     var result: Result<AvatarResponseDTO, Error> = .success(AvatarResponseDTO(avatarUrl: "https://cdn.example.com/a.jpg"))
+    var meResult: Result<UserProfileDTO, Error> = .failure(NetworkError.decoding)
+
+    func fetchMe() async throws -> UserProfileDTO { try meResult.get() }
 
     func uploadAvatar(jpegData: Data) async throws -> AvatarResponseDTO {
         try result.get()

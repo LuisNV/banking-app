@@ -23,6 +23,16 @@ private final class StubDashboardUseCase: GetHomeDashboardUseCaseProtocol {
     }
 }
 
+private final class StubMyProfile: GetMyProfileUseCaseProtocol {
+    var result: Result<UserProfile, Error>
+    private(set) var callCount = 0
+    init(_ result: Result<UserProfile, Error>) { self.result = result }
+    func execute() async throws -> UserProfile {
+        callCount += 1
+        return try result.get()
+    }
+}
+
 private final class SpyPronunciation: PronunciationServiceProtocol {
     private(set) var spoken: [String] = []
     func speak(_ text: String) { spoken.append(text) }
@@ -32,10 +42,15 @@ private final class SpyPronunciation: PronunciationServiceProtocol {
 final class HomeDashboardTests: XCTestCase {
     private var dashboardUseCase: StubDashboardUseCase!
     private var pronunciation: SpyPronunciation!
+    private var myProfile: StubMyProfile!
 
     override func setUp() async throws {
         dashboardUseCase = StubDashboardUseCase(result: .success(try await MockHomeRepository().dashboard()))
         pronunciation = SpyPronunciation()
+        myProfile = StubMyProfile(.success(UserProfile(
+            id: "u1", fullName: "Trần Thị Bích Ngọc", email: "ngoc@example.com", username: "ngoc",
+            phone: nil, birthDate: nil, avatarURL: URL(string: "https://cdn.example.com/n.jpg")
+        )))
     }
 
     private func makeSUT(fullName: String? = "Nguyễn Minh Anh", today: Date = Date()) -> HomeViewModel {
@@ -44,6 +59,7 @@ final class HomeDashboardTests: XCTestCase {
             logoutUseCase: NoopLogoutUseCase(),
             uploadAvatarUseCase: NoopUploadAvatarUseCase(),
             getDashboardUseCase: dashboardUseCase,
+            getMyProfileUseCase: myProfile,
             pronunciation: pronunciation,
             today: today,
             onLoggedOut: {}
@@ -107,6 +123,40 @@ final class HomeDashboardTests: XCTestCase {
         sut.playWordOfTheDay()
 
         XCTAssertEqual(pronunciation.spoken, ["学习"])
+    }
+
+    func test_loadProfile_updatesNameEmailAndAvatar() async {
+        let sut = makeSUT()
+
+        await sut.loadProfile()
+        await sut.loadProfile()
+
+        XCTAssertEqual(myProfile.callCount, 1)
+        XCTAssertEqual(sut.greeting, "Chào, Bích Ngọc")
+        XCTAssertEqual(sut.accountSubtitle, "ngoc@example.com")
+        XCTAssertEqual(sut.avatarURL?.absoluteString, "https://cdn.example.com/n.jpg")
+
+        await sut.loadProfile(force: true)
+        XCTAssertEqual(myProfile.callCount, 2)
+    }
+
+    func test_loadProfile_failure_keepsLoginUser_andShowsError() async {
+        myProfile.result = .failure(ProfileError.network)
+        let sut = makeSUT()
+
+        await sut.loadProfile()
+
+        XCTAssertEqual(sut.greeting, "Chào, Minh Anh")
+        XCTAssertEqual(sut.profileErrorMessage, ProfileError.network.errorDescription)
+    }
+
+    func test_loadProfile_sessionExpired_showsNoError() async {
+        myProfile.result = .failure(ProfileError.sessionExpired)
+        let sut = makeSUT()
+
+        await sut.loadProfile()
+
+        XCTAssertNil(sut.profileErrorMessage)
     }
 
     func test_dailyGoal_fraction_isClamped() {

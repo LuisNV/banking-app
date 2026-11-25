@@ -52,6 +52,7 @@ struct ProfileTabView: View {
                 destination(for: route)
             }
             .task { await viewModel.loadDashboard() }
+            .refreshable { await viewModel.loadProfile(force: true) }
             .onChange(of: pickedPhoto) { _, item in
                 guard let item else { return }
                 Task { @MainActor in
@@ -81,12 +82,12 @@ struct ProfileTabView: View {
     private var header: some View {
         VStack(spacing: 0) {
             avatarPicker
-            Text(viewModel.user?.fullName ?? "Chào mừng bạn")
+            Text(viewModel.fullName ?? "Chào mừng bạn")
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
                 .padding(.top, 14)
-            if let username = viewModel.user?.username, !username.isEmpty {
-                Text(username)
+            if let subtitle = viewModel.accountSubtitle, !subtitle.isEmpty {
+                Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(AppColor.textSecondary)
                     .padding(.top, 2)
@@ -262,7 +263,7 @@ struct ProfileTabView: View {
     private func destination(for route: Route) -> some View {
         switch route {
         case .personalInfo:
-            PersonalInfoView(user: viewModel.user)
+            PersonalInfoView(viewModel: viewModel)
         case .changePassword, .dailyGoal, .reminder, .script:
             ContentUnavailableView(
                 route.title,
@@ -272,24 +273,6 @@ struct ProfileTabView: View {
             .navigationTitle(route.title)
             .navigationBarTitleDisplayMode(.inline)
         }
-    }
-}
-
-/// Thông tin tài khoản (chỉ xem). TODO: cho sửa khi có API cập nhật hồ sơ.
-private struct PersonalInfoView: View {
-    let user: User?
-
-    var body: some View {
-        List {
-            Section {
-                LabeledContent("Họ và tên", value: user?.fullName ?? "—")
-                LabeledContent("Email", value: user?.username ?? "—")
-            } footer: {
-                Text("Chức năng sửa thông tin sẽ có trong bản cập nhật sau.")
-            }
-        }
-        .navigationTitle("Thông tin cá nhân")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

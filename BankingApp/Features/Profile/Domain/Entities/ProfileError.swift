@@ -6,6 +6,7 @@ enum ProfileError: LocalizedError, Equatable {
     case sessionExpired
     case network
     case api(message: String)
+    case loadFailed
     case unknown
 
     var errorDescription: String? {
@@ -15,6 +16,7 @@ enum ProfileError: LocalizedError, Equatable {
         case .sessionExpired: return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
         case .network: return "Không thể kết nối. Vui lòng kiểm tra mạng và thử lại."
         case .api(let message): return message
+        case .loadFailed: return "Không tải được thông tin cá nhân. Vui lòng thử lại."
         case .unknown: return "Không thể cập nhật ảnh đại diện. Vui lòng thử lại."
         }
     }

@@ -7,6 +7,15 @@ final class ProfileRepositoryImpl: ProfileRepository {
         self.remote = remote
     }
 
+    func currentProfile() async throws -> UserProfile {
+        do {
+            return try await remote.fetchMe().toDomain()
+        } catch {
+            let mapped = Self.map(error)
+            throw mapped == .unknown ? ProfileError.loadFailed : mapped
+        }
+    }
+
     func uploadAvatar(jpegData: Data) async throws -> URL? {
         do {
             let dto = try await remote.uploadAvatar(jpegData: jpegData)

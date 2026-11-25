@@ -2,17 +2,22 @@ import Alamofire
 import Foundation
 
 enum ProfileEndpoint: Endpoint {
+    /// `GET v1/auth/me` + Bearer token.
+    case me
+
     /// `POST v1/users/me/avatar`, multipart field `file`.
     case uploadAvatar(jpegData: Data)
 
     var path: String {
         switch self {
+        case .me: return "v1/auth/me"
         case .uploadAvatar: return "v1/users/me/avatar"
         }
     }
 
     var method: HTTPMethod {
         switch self {
+        case .me: return .get
         case .uploadAvatar: return .post
         }
     }
@@ -21,6 +26,8 @@ enum ProfileEndpoint: Endpoint {
         switch self {
         case .uploadAvatar(let data):
             return [UploadFile(fieldName: "file", fileName: "avatar.jpg", mimeType: "image/jpeg", data: data)]
+        case .me:
+            return nil
         }
     }
 
@@ -28,6 +35,7 @@ enum ProfileEndpoint: Endpoint {
     var timeout: TimeInterval? {
         switch self {
         case .uploadAvatar: return 120
+        case .me: return nil
         }
     }
 

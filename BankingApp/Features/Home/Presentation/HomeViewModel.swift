@@ -19,12 +19,31 @@ final class HomeViewModel {
     /// Ngày hiển thị ở đầu Trang chủ.
     let today: Date
 
+    // MARK: Profile (`GET v1/auth/me`)
+    private(set) var profile: UserProfile?
+    private(set) var isLoadingProfile = false
+    private(set) var profileErrorMessage: String?
+
     // MARK: Avatar
     private(set) var isUploadingAvatar = false
     /// Ảnh vừa upload thành công (hiện ngay, không cần tải lại từ server).
     private(set) var avatarImageData: Data?
-    /// URL ảnh server trả về (nếu có).
-    private(set) var avatarURL: URL?
+    /// URL ảnh server trả về sau khi upload (nếu có).
+    private var uploadedAvatarURL: URL?
+
+    /// Ảnh vừa upload, không có thì ảnh trong hồ sơ.
+    var avatarURL: URL? { uploadedAvatarURL ?? profile?.avatarURL }
+
+    /// Họ tên hiển thị: ưu tiên dữ liệu mới nhất từ `me`.
+    var fullName: String? {
+        let name = profile?.fullName ?? user?.fullName
+        return name?.isEmpty == false ? name : nil
+    }
+
+    /// Email (hoặc tên đăng nhập) hiển thị dưới tên.
+    var accountSubtitle: String? {
+        profile?.email ?? profile?.username ?? user?.username
+    }
     var errorMessage: String?
 
     var isShowingError: Bool {
@@ -35,6 +54,7 @@ final class HomeViewModel {
     private let logoutUseCase: LogoutUseCaseProtocol
     private let uploadAvatarUseCase: UploadAvatarUseCaseProtocol
     private let getDashboardUseCase: GetHomeDashboardUseCaseProtocol
+    private let getMyProfileUseCase: GetMyProfileUseCaseProtocol
     private let pronunciation: PronunciationServiceProtocol
     private let prepareImage: (Data) -> Data?
     private let onLoggedOut: () -> Void
@@ -44,6 +64,7 @@ final class HomeViewModel {
         logoutUseCase: LogoutUseCaseProtocol = Container.shared.logoutUseCase(),
         uploadAvatarUseCase: UploadAvatarUseCaseProtocol = Container.shared.uploadAvatarUseCase(),
         getDashboardUseCase: GetHomeDashboardUseCaseProtocol = Container.shared.getHomeDashboardUseCase(),
+        getMyProfileUseCase: GetMyProfileUseCaseProtocol = Container.shared.getMyProfileUseCase(),
         pronunciation: PronunciationServiceProtocol = Container.shared.pronunciationService(),
         prepareImage: @escaping (Data) -> Data? = AvatarImageProcessor.jpegData(from:),
         today: Date = Date(),
@@ -53,6 +74,7 @@ final class HomeViewModel {
         self.logoutUseCase = logoutUseCase
         self.uploadAvatarUseCase = uploadAvatarUseCase
         self.getDashboardUseCase = getDashboardUseCase
+        self.getMyProfileUseCase = getMyProfileUseCase
         self.pronunciation = pronunciation
         self.prepareImage = prepareImage
         self.today = today
@@ -63,7 +85,7 @@ final class HomeViewModel {
 
     /// Tên gọi thân mật: "Nguyễn Minh Anh" → "Minh Anh".
     var displayName: String? {
-        let words = (user?.fullName ?? "").split(whereSeparator: \.isWhitespace)
+        let words = (fullName ?? "").split(whereSeparator: \.isWhitespace)
         guard !words.isEmpty else { return nil }
         return words.suffix(words.count >= 3 ? 2 : words.count).joined(separator: " ")
     }
@@ -100,6 +122,22 @@ final class HomeViewModel {
         dashboard = try? await getDashboardUseCase.execute()
     }
 
+    /// Tải thông tin tài khoản. Mặc định chỉ tải một lần; `force` để tải lại (kéo để làm mới).
+    func loadProfile(force: Bool = false) async {
+        guard !isLoadingProfile, force || profile == nil else { return }
+        isLoadingProfile = true
+        defer { isLoadingProfile = false }
+        do {
+            profile = try await getMyProfileUseCase.execute()
+            profileErrorMessage = nil
+        } catch ProfileError.sessionExpired {
+            // AppRouter đã đưa về màn đăng nhập.
+        } catch {
+            profileErrorMessage = (error as? LocalizedError)?.errorDescription
+                ?? ProfileError.loadFailed.errorDescription
+        }
+    }
+
     func playWordOfTheDay() {
         guard let word = dashboard?.wordOfTheDay else { return }
         pronunciation.speak(word.hanzi)
@@ -126,7 +164,7 @@ final class HomeViewModel {
         do {
             let url = try await uploadAvatarUseCase.execute(jpegData: jpegData)
             avatarImageData = jpegData
-            avatarURL = url
+            uploadedAvatarURL = url
         } catch ProfileError.sessionExpired {
             // AppRouter đã tự đưa về màn đăng nhập và báo hết phiên, không cần báo thêm.
         } catch {

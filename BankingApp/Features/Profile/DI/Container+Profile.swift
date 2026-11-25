@@ -17,6 +17,10 @@ extension Container {
     }
 
     // MARK: Domain
+    var getMyProfileUseCase: Factory<any GetMyProfileUseCaseProtocol> {
+        self { GetMyProfileUseCase(repository: self.profileRepository()) }
+    }
+
     var uploadAvatarUseCase: Factory<any UploadAvatarUseCaseProtocol> {
         self { UploadAvatarUseCase(repository: self.profileRepository()) }
     }
