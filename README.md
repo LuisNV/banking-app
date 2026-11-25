@@ -120,7 +120,7 @@ BankingApp/
 │   │   ├── Presentation/Login/
 │   │   └── DI/
 │   ├── Utilities/            # Drawer "Học thử": từ điển, pinyin, thanh điệu, viết chữ, bộ thủ, HSK
-│   └── Home/                 # Màn hình sau đăng nhập (placeholder)
+│   └── Home/                 # Trang chủ (chuỗi học, mục tiêu, bài đang học, từ của ngày, công cụ) + thanh tab nổi
 └── Resources/                # Assets, Info.plist (XcodeGen sinh)
 BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
 ```
@@ -142,3 +142,5 @@ BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
 - API đăng ký: luồng Đăng ký đang dùng `MockRegistrationRepository` (mã xác minh `123456`, email `taken@example.com` báo đã tồn tại). Khi có API, thêm RemoteDataSource + RepositoryImpl trong `Features/Register/Data` và đổi factory ở `Container+Register.swift`
 - Đa ngôn ngữ: chuỗi đang viết thẳng tiếng Việt, nên chuyển sang `Localizable.xcstrings`
 - Đăng nhập Apple / Google (chưa làm)
+- API Trang chủ: số liệu (chuỗi học, mục tiêu, bài đang học, từ của ngày) đang lấy từ `MockHomeRepository`. Khi có API, thêm RemoteDataSource + `HomeRepositoryImpl` trong `Features/Home/Data` và đổi factory ở `Container+Home.swift`
+- Tab Bài học, Ôn tập đang là màn tạm; tab Cá nhân mới có đổi ảnh đại diện và đăng xuất

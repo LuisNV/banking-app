@@ -3,6 +3,8 @@ import SwiftUI
 enum AppColor {
     static let brand = Color(hex: 0x0A5BD3)
     static let brandTint = brand.opacity(0.1)
+    /// Chữ màu thương hiệu trên nền trắng/nhạt (nút trên thẻ màu brand).
+    static let brandDark = Color(hex: 0x08479F)
 
     static let background = Color(.systemBackground)
     static let groupedBackground = Color(.systemGroupedBackground)
