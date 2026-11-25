@@ -91,10 +91,11 @@ final class NetworkLogger: EventMonitor, @unchecked Sendable {
         #endif
     }
 
-    private static func redactPassword(_ json: String) -> String {
+    /// Che mọi trường mật khẩu: `password`, `confirmPassword`, `currentPassword`, `newPassword`...
+    static func redactPassword(_ json: String) -> String {
         json.replacingOccurrences(
-            of: #""password"\s*:\s*"[^"]*""#,
-            with: #""password":"***""#,
+            of: #""(\w*[Pp]assword)"\s*:\s*"[^"]*""#,
+            with: #""$1":"***""#,
             options: .regularExpression
         )
     }

@@ -25,6 +25,7 @@ struct ProfileTabView: View {
     let viewModel: HomeViewModel
     @State private var settings = ProfileSettingsViewModel()
     @State private var isChangingAvatar = false
+    @State private var isChangingPassword = false
     @State private var isConfirmingLogout = false
 
     var body: some View {
@@ -55,6 +56,10 @@ struct ProfileTabView: View {
             }
             .task { await viewModel.loadDashboard() }
             .refreshable { await viewModel.loadProfile(force: true) }
+            // Toàn màn hình để che thanh tab nổi (màn đổi mật khẩu có nút ở cuối).
+            .fullScreenCover(isPresented: $isChangingPassword) {
+                ChangePasswordView()
+            }
             .avatarPicker(isPresented: $isChangingAvatar) { jpegData in
                 Task { await viewModel.uploadAvatar(from: jpegData) }
             }
@@ -156,7 +161,9 @@ struct ProfileTabView: View {
                     ProfileRowLabel(title: "Thông tin cá nhân", systemImage: "person.fill", tint: Color(.systemBlue))
                 }
                 GroupedDivider()
-                NavigationLink(value: Route.changePassword) {
+                Button {
+                    isChangingPassword = true
+                } label: {
                     ProfileRowLabel(title: "Đổi mật khẩu", systemImage: "lock.fill", tint: Color(.systemGray))
                 }
                 if settings.showsBiometricOption {
@@ -272,7 +279,9 @@ struct ProfileTabView: View {
             } else {
                 PersonalInfoView(viewModel: viewModel)
             }
-        case .changePassword, .dailyGoal, .reminder, .script:
+        case .changePassword:
+            ChangePasswordView()
+        case .dailyGoal, .reminder, .script:
             ContentUnavailableView(
                 route.title,
                 systemImage: "hammer",
