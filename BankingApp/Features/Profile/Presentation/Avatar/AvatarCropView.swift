@@ -19,57 +19,64 @@ struct AvatarCropView: View {
             let geometry = AvatarCropGeometry(imageSize: image.size, cropDiameter: diameter)
             let shown = geometry.displayedSize(zoom: zoom)
 
-            ZStack {
-                Image(uiImage: image)
-                    .resizable()
-                    .frame(width: shown.width, height: shown.height)
-                    .offset(offset)
-                    .accessibilityHidden(true)
-
-                CropMask(diameter: diameter)
-                    .allowsHitTesting(false)
-
-                VStack {
+            // Lớp ảnh: khung cố định bằng màn hình. Ảnh phóng to có thể rộng hơn màn hình,
+            // nên phải cố định khung + cắt phần thừa, nếu không bố cục bị kéo rộng theo ảnh
+            // và các nút bị đẩy ra ngoài mép.
+            Color.black
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .overlay {
+                    Image(uiImage: image)
+                        .resizable()
+                        .frame(width: shown.width, height: shown.height)
+                        .offset(offset)
+                        .accessibilityHidden(true)
+                }
+                .clipped()
+                .overlay {
+                    CropMask(diameter: diameter)
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .allowsHitTesting(false)
+                }
+                .contentShape(Rectangle())
+                .gesture(
+                    SimultaneousGesture(
+                        MagnifyGesture()
+                            .onChanged { value in
+                                zoom = geometry.clampedZoom(committedZoom * value.magnification)
+                                offset = geometry.clampedOffset(offset, zoom: zoom)
+                            }
+                            .onEnded { _ in commit() },
+                        DragGesture()
+                            .onChanged { value in
+                                offset = geometry.clampedOffset(
+                                    CGSize(
+                                        width: committedOffset.width + value.translation.width,
+                                        height: committedOffset.height + value.translation.height
+                                    ),
+                                    zoom: zoom
+                                )
+                            }
+                            .onEnded { _ in commit() }
+                    )
+                )
+                .onTapGesture(count: 2) {
+                    withAnimation(.spring(duration: 0.3)) {
+                        zoom = zoom > 1.01 ? 1 : 2
+                        offset = geometry.clampedOffset(offset, zoom: zoom)
+                    }
+                    commit()
+                }
+                .overlay(alignment: .top) {
                     Text("Kéo và phóng to để ảnh vừa khung")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.85))
                         .padding(.top, 20)
-                    Spacer()
+                        .allowsHitTesting(false)
+                }
+                .overlay(alignment: .bottom) {
                     bottomBar(geometry: geometry)
+                        .frame(width: proxy.size.width)
                 }
-            }
-            .frame(width: proxy.size.width, height: proxy.size.height)
-            // Cắt phần ảnh tràn ra vùng tai thỏ / thanh home cho khớp lớp phủ.
-            .clipped()
-            .contentShape(Rectangle())
-            .gesture(
-                SimultaneousGesture(
-                    MagnifyGesture()
-                        .onChanged { value in
-                            zoom = geometry.clampedZoom(committedZoom * value.magnification)
-                            offset = geometry.clampedOffset(offset, zoom: zoom)
-                        }
-                        .onEnded { _ in commit() },
-                    DragGesture()
-                        .onChanged { value in
-                            offset = geometry.clampedOffset(
-                                CGSize(
-                                    width: committedOffset.width + value.translation.width,
-                                    height: committedOffset.height + value.translation.height
-                                ),
-                                zoom: zoom
-                            )
-                        }
-                        .onEnded { _ in commit() }
-                )
-            )
-            .onTapGesture(count: 2) {
-                withAnimation(.spring(duration: 0.3)) {
-                    zoom = zoom > 1.01 ? 1 : 2
-                    offset = geometry.clampedOffset(offset, zoom: zoom)
-                }
-                commit()
-            }
         }
         .background(Color.black.ignoresSafeArea())
         .statusBarHidden()
@@ -150,25 +157,20 @@ private struct CropMask: View {
     let diameter: CGFloat
 
     var body: some View {
-        GeometryReader { proxy in
-            let rect = CGRect(
-                x: (proxy.size.width - diameter) / 2,
-                y: (proxy.size.height - diameter) / 2,
-                width: diameter,
-                height: diameter
-            )
-            ZStack {
-                Path { path in
-                    path.addRect(CGRect(origin: .zero, size: proxy.size))
-                    path.addEllipse(in: rect)
+        ZStack {
+            // Phủ tối toàn màn rồi "đục" lỗ tròn ở giữa.
+            Rectangle()
+                .fill(Color.black.opacity(0.6))
+                .overlay {
+                    Circle()
+                        .frame(width: diameter, height: diameter)
+                        .blendMode(.destinationOut)
                 }
-                .fill(Color.black.opacity(0.6), style: FillStyle(eoFill: true))
+                .compositingGroup()
 
-                Circle()
-                    .stroke(.white.opacity(0.9), lineWidth: 1.5)
-                    .frame(width: diameter, height: diameter)
-                    .position(x: rect.midX, y: rect.midY)
-            }
+            Circle()
+                .stroke(.white.opacity(0.9), lineWidth: 1.5)
+                .frame(width: diameter, height: diameter)
         }
     }
 }
