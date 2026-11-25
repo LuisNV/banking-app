@@ -56,6 +56,7 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSFaceIDUsageDescription: Dùng khuôn mặt để đăng nhập TingTing nhanh hơn.
+        NSCameraUsageDescription: Dùng camera để chụp ảnh đại diện.
         API_BASE_URL: $(API_BASE_URL)
         USE_MOCK_API: $(USE_MOCK_API)
         # Cho phép gọi server http:// trong mạng nội bộ (localhost, 192.168.x.x, *.local) khi phát triển.

@@ -1,4 +1,3 @@
-import PhotosUI
 import SwiftUI
 
 /// Tab "Cá nhân": ảnh đại diện, thống kê học, cài đặt tài khoản/học tập, hỗ trợ, đăng xuất.
@@ -25,7 +24,7 @@ struct ProfileTabView: View {
 
     let viewModel: HomeViewModel
     @State private var settings = ProfileSettingsViewModel()
-    @State private var pickedPhoto: PhotosPickerItem?
+    @State private var isChangingAvatar = false
     @State private var isConfirmingLogout = false
 
     var body: some View {
@@ -56,16 +55,8 @@ struct ProfileTabView: View {
             }
             .task { await viewModel.loadDashboard() }
             .refreshable { await viewModel.loadProfile(force: true) }
-            .onChange(of: pickedPhoto) { _, item in
-                guard let item else { return }
-                Task { @MainActor in
-                    defer { pickedPhoto = nil }
-                    guard let data = try? await item.loadTransferable(type: Data.self) else {
-                        viewModel.errorMessage = ProfileError.invalidImage.errorDescription
-                        return
-                    }
-                    await viewModel.uploadAvatar(from: data)
-                }
+            .avatarPicker(isPresented: $isChangingAvatar) { jpegData in
+                Task { await viewModel.uploadAvatar(from: jpegData) }
             }
             // Dùng alert (không dùng confirmationDialog): từ iOS 26 confirmationDialog hiện dạng
             // bong bóng và ẩn nút Huỷ, còn alert luôn là hộp thoại giữa màn hình có đủ hai nút.
@@ -109,7 +100,9 @@ struct ProfileTabView: View {
     }
 
     private var avatarPicker: some View {
-        PhotosPicker(selection: $pickedPhoto, matching: .images) {
+        Button {
+            isChangingAvatar = true
+        } label: {
             HomeAvatar(viewModel: viewModel, size: 96)
                 .overlay {
                     if viewModel.isUploadingAvatar {

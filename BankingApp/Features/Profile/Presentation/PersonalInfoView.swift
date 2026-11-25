@@ -3,12 +3,26 @@ import SwiftUI
 /// Màn "Thông tin cá nhân": dữ liệu từ `GET v1/auth/me`. Bấm "Sửa" để mở `EditProfileView`.
 struct PersonalInfoView: View {
     let viewModel: HomeViewModel
+    @State private var isChangingAvatar = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
                 VStack(spacing: 10) {
-                    HomeAvatar(viewModel: viewModel, size: 80)
+                    Button {
+                        isChangingAvatar = true
+                    } label: {
+                        HomeAvatar(viewModel: viewModel, size: 80)
+                            .overlay {
+                                if viewModel.isUploadingAvatar {
+                                    Circle().fill(.black.opacity(0.4))
+                                    ProgressView().tint(.white)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.isUploadingAvatar)
+                    .accessibilityLabel("Đổi ảnh đại diện")
                     Text(viewModel.fullName ?? "—")
                         .font(.title3.bold())
                         .multilineTextAlignment(.center)
@@ -35,6 +49,9 @@ struct PersonalInfoView: View {
             }
         }
         .refreshable { await viewModel.loadProfile(force: true) }
+        .avatarPicker(isPresented: $isChangingAvatar) { jpegData in
+            Task { await viewModel.uploadAvatar(from: jpegData) }
+        }
         .task { await viewModel.loadProfile(force: true) }
     }
 
