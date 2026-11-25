@@ -6,10 +6,6 @@ import Foundation
 /// - `null` hoặc không có body
 struct AvatarResponseDTO: DefaultDecodable, Equatable {
     let avatarUrl: String?
-    let address: String?
-    /// "MALE" / "FEMALE" / "OTHER".
-    let gender: String?
-    let emailVerified: Bool?
 
     init() { avatarUrl = nil }
 
@@ -48,6 +44,10 @@ struct UserProfileDTO: Decodable, Equatable {
     /// Chuỗi ngày: "yyyy-MM-dd" hoặc ISO 8601.
     let birthDate: String?
     let avatarUrl: String?
+    let address: String?
+    /// "MALE" / "FEMALE" / "OTHER".
+    let gender: String?
+    let emailVerified: Bool?
 
     init(
         id: String,
