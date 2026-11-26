@@ -111,7 +111,6 @@ actor MockVocabularyRepository: VocabularyRepository {
         case .all: pool = levelWords
         case .learning: pool = levelWords.filter { status(of: $0.id) == .learning }
         case .known: pool = levelWords.filter { status(of: $0.id) == .known }
-        case .topic(let topic): pool = levelWords.filter { $0.topic == topic }
         }
         let types = Array(config.types)
         guard !pool.isEmpty, !types.isEmpty else { throw VocabularyError.noWordsInScope }

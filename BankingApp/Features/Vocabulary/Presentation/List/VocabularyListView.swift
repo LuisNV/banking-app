@@ -66,8 +66,7 @@ struct VocabularyListView: View {
         .sheet(isPresented: $isShowingQuizSetup, onDismiss: startPendingQuiz) {
             QuizSetupSheet(
                 level: viewModel.level,
-                summary: viewModel.summary,
-                topics: viewModel.topics
+                summary: viewModel.summary
             ) { config in
                 pendingQuiz = config
                 isShowingQuizSetup = false

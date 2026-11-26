@@ -39,7 +39,6 @@ extension QuizQuestionType {
 struct QuizSetupSheet: View {
     let level: Int
     let summary: VocabSummary
-    let topics: [String]
     let onStart: (QuizConfig) -> Void
 
     @State private var config: QuizConfig
@@ -48,10 +47,9 @@ struct QuizSetupSheet: View {
 
     private let questionCounts = [10, 20, 30]
 
-    init(level: Int, summary: VocabSummary, topics: [String], onStart: @escaping (QuizConfig) -> Void) {
+    init(level: Int, summary: VocabSummary, onStart: @escaping (QuizConfig) -> Void) {
         self.level = level
         self.summary = summary
-        self.topics = topics
         self.onStart = onStart
         _config = State(initialValue: QuizConfig(level: level))
     }
@@ -108,11 +106,10 @@ struct QuizSetupSheet: View {
     private var scopeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Phạm vi")
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible())], spacing: 8) {
-                scopeTile(.all, title: "Tất cả HSK \(level)", subtitle: "\(summary.total) từ")
+            HStack(spacing: 8) {
+                scopeTile(.all, title: "Tất cả", subtitle: "\(summary.total) từ")
                 scopeTile(.learning, title: "Đang học", subtitle: "\(summary.learning) từ", disabled: summary.learning == 0)
                 scopeTile(.known, title: "Đã thuộc", subtitle: "\(summary.known) từ", disabled: summary.known == 0)
-                topicTile
             }
         }
     }
@@ -127,26 +124,6 @@ struct QuizSetupSheet: View {
         .disabled(disabled)
         .opacity(disabled ? 0.45 : 1)
         .accessibilityAddTraits(config.scope == scope ? .isSelected : [])
-    }
-
-    private var topicTile: some View {
-        let selectedTopic: String? = {
-            if case .topic(let topic) = config.scope { return topic }
-            return nil
-        }()
-        return Menu {
-            ForEach(topics, id: \.self) { topic in
-                Button(topic) { config.scope = .topic(topic) }
-            }
-        } label: {
-            ScopeTileLabel(
-                title: selectedTopic ?? "Theo chủ đề",
-                subtitle: selectedTopic == nil ? topics.prefix(2).joined(separator: ", ") + "…" : "Đổi chủ đề",
-                isSelected: selectedTopic != nil,
-                showsChevron: true
-            )
-        }
-        .buttonStyle(.plain)
     }
 
     private var countSection: some View {
@@ -217,7 +194,6 @@ private struct ScopeTileLabel: View {
     let title: String
     let subtitle: String
     let isSelected: Bool
-    var showsChevron = false
 
     var body: some View {
         HStack {
@@ -231,11 +207,6 @@ private struct ScopeTileLabel: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
-            if showsChevron {
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(AppColor.textTertiary)
-            }
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)

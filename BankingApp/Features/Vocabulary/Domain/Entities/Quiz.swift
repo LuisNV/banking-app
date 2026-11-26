@@ -10,7 +10,6 @@ enum QuizScope: Hashable, Sendable {
     case all
     case learning
     case known
-    case topic(String)
 }
 
 struct QuizConfig: Hashable, Sendable {

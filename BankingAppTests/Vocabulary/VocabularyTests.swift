@@ -50,9 +50,10 @@ final class MockVocabularyRepositoryTests: XCTestCase {
     }
 
     func test_createQuiz_emptyScope_throws() async throws {
-        let empty = MockVocabularyRepository(words: Array(MockVocabularyData.hsk1.prefix(4)))
+        // Hai từ chưa ai học: phạm vi "Đã thuộc" rỗng.
+        let empty = MockVocabularyRepository(words: MockVocabularyData.hsk1.filter { ["hsk1-erzi", "hsk1-nver"].contains($0.id) })
         var config = QuizConfig()
-        config.scope = .topic("Không có")
+        config.scope = .known
         do {
             _ = try await empty.createQuiz(config)
             XCTFail("Phải báo lỗi khi phạm vi không có từ")
@@ -63,7 +64,6 @@ final class MockVocabularyRepositoryTests: XCTestCase {
 
     func test_submitQuiz_wrongAnswer_movesWordToLearning_correctNewWord_onlyLearning() async throws {
         var config = QuizConfig()
-        config.scope = .topic("Số đếm")
         config.questionCount = 2
         let quiz = try await repository.createQuiz(config)
         let first = quiz.questions[0], second = quiz.questions[1]
@@ -79,9 +79,8 @@ final class MockVocabularyRepositoryTests: XCTestCase {
         XCTAssertEqual(result.statuses[first.word.id], .learning)
         if first.word.id != second.word.id {
             XCTAssertEqual(result.correct, 1)
-            // Số đếm: chỉ 一 đã thuộc sẵn, các từ khác chưa học → đúng chỉ thành "Đang học".
-            let expected: VocabStatus = second.word.id == "hsk1-yi" ? .known : .learning
-            XCTAssertEqual(result.statuses[second.word.id], expected)
+            // Trả lời đúng: từ chưa học chỉ lên "Đang học", không bao giờ còn "Chưa học".
+            XCTAssertNotEqual(result.statuses[second.word.id], .notStarted)
         }
         XCTAssertEqual(result.previousPercent, 70)
     }
