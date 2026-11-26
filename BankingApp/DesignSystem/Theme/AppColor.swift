@@ -22,6 +22,18 @@ enum AppColor {
             ? UIColor(white: 1, alpha: 0.18)
             : UIColor(red: 0xD5 / 255, green: 0xDA / 255, blue: 0xE3 / 255, alpha: 1)
     })
+    /// Viền thẻ (nhạt hơn viền ô nhập một chút).
+    static let cardBorder = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(white: 1, alpha: 0.14)
+            : UIColor(red: 0xE3 / 255, green: 0xE6 / 255, blue: 0xEC / 255, alpha: 1)
+    })
+    /// Đường kẻ giữa các dòng trong thẻ viền mảnh.
+    static let rowDivider = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(white: 1, alpha: 0.10)
+            : UIColor(red: 0xEE / 255, green: 0xF0 / 255, blue: 0xF4 / 255, alpha: 1)
+    })
     /// Nền ô nhập: trắng (sáng) / nền hệ thống (tối).
     static let fieldBackground = Color(.systemBackground)
     /// Quầng sáng quanh ô đang nhập.

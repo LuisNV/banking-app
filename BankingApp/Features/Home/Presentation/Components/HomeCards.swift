@@ -26,9 +26,9 @@ struct HomeStatCard<Icon: View>: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
         .padding(.vertical, 14)
-        .background(AppColor.field, in: RoundedRectangle(cornerRadius: HomeCardStyle.radius, style: .continuous))
+        .outlinedSurface(cornerRadius: HomeCardStyle.radius)
         .accessibilityElement(children: .combine)
     }
 }
@@ -52,11 +52,16 @@ struct ProgressRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color(.systemGray4), lineWidth: lineWidth)
+            Circle().stroke(AppColor.cardBorder, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: fraction)
                 .stroke(AppColor.success, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+            if fraction >= 1 {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color(hex: 0x1E7A37))
+            }
         }
         .padding(lineWidth / 2)
         .accessibilityHidden(true)
@@ -148,7 +153,7 @@ struct WordOfTheDayCard: View {
                     .foregroundStyle(Color(.secondaryLabel))
                     .padding(.horizontal, 8)
                     .frame(height: 22)
-                    .background(Capsule().fill(Color(.systemGray5)))
+                    .outlinedSurface(Capsule(), borderColor: AppColor.fieldBorder, lineWidth: 1)
             }
 
             HStack(spacing: 14) {
@@ -163,8 +168,8 @@ struct WordOfTheDayCard: View {
                 .accessibilityElement(children: .combine)
 
                 Rectangle()
-                    .fill(AppColor.separator)
-                    .frame(width: 0.5)
+                    .fill(AppColor.cardBorder)
+                    .frame(width: 1)
                     .frame(maxHeight: .infinity)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -191,7 +196,7 @@ struct WordOfTheDayCard: View {
         .padding(.leading, 16)
         .padding(.trailing, 14)
         .padding(.vertical, 14)
-        .background(AppColor.field, in: RoundedRectangle(cornerRadius: HomeCardStyle.radius, style: .continuous))
+        .outlinedSurface(cornerRadius: HomeCardStyle.radius)
     }
 }
 

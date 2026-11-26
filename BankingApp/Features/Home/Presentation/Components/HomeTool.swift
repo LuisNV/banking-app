@@ -39,6 +39,7 @@ struct HomeTool: Identifiable, Hashable {
 struct HomeToolIcon: View {
     let tool: HomeTool
     var size: CGFloat = 34
+    var hasShadow = false
 
     var body: some View {
         Group {
@@ -54,27 +55,27 @@ struct HomeToolIcon: View {
         .foregroundStyle(.white)
         .frame(width: size, height: size)
         .background(tool.tint, in: RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))
+        .shadow(color: hasShadow ? tool.tint.opacity(0.25) : .clear, radius: 6, y: 3)
         .accessibilityHidden(true)
     }
 }
 
-/// Ô công cụ trong lưới 3 cột.
+/// Ô công cụ trong lưới 3 cột: icon màu lớn + nhãn, không có khung bao (giống lưới app iPhone).
 struct HomeToolTile: View {
     let tool: HomeTool
 
     var body: some View {
-        VStack(spacing: 8) {
-            HomeToolIcon(tool: tool)
+        VStack(spacing: 7) {
+            HomeToolIcon(tool: tool, size: 56, hasShadow: true)
             Text(tool.shortTitle)
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(AppColor.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
-        .frame(maxWidth: .infinity, minHeight: 82)
-        .padding(.horizontal, 4)
-        .background(AppColor.field, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .frame(maxWidth: .infinity, minHeight: 84, alignment: .top)
+        .padding(.horizontal, 2)
+        .contentShape(Rectangle())
     }
 }
 

@@ -267,7 +267,7 @@ struct ReminderSettingsView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 150)
                             .clipped()
-                            .background(AppColor.field, in: RoundedRectangle(cornerRadius: AppMetrics.groupedCardRadius, style: .continuous))
+                            .outlinedSurface()
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -282,7 +282,8 @@ struct ReminderSettingsView: View {
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(isOn ? .white : AppColor.textPrimary)
                                         .frame(maxWidth: .infinity, minHeight: 44)
-                                        .background(isOn ? AppColor.brand : AppColor.field, in: Capsule())
+                                        .background(isOn ? AppColor.brand : AppColor.fieldBackground, in: Capsule())
+                                        .overlay(Capsule().strokeBorder(isOn ? .clear : AppColor.fieldBorder, lineWidth: 1.5))
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel(day.title)
@@ -443,11 +444,11 @@ struct ScriptSettingsView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14)
-                            .background(AppColor.field, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                    .strokeBorder(option == script ? AppColor.brand : .clear, lineWidth: 2)
-                            }
+                            .outlinedSurface(
+                                cornerRadius: 22,
+                                borderColor: option == script ? AppColor.brand : AppColor.cardBorder,
+                                lineWidth: option == script ? 2 : 1.5
+                            )
                             .overlay(alignment: .topTrailing) {
                                 if option == script { SelectionCheck().padding(12) }
                             }
@@ -498,7 +499,7 @@ struct ScriptSettingsView: View {
                         .disabled(pinyinMode != .onTap)
                         .accessibilityHint(previewHint)
 
-                        Rectangle().fill(AppColor.separator).frame(width: 0.5)
+                        Rectangle().fill(AppColor.rowDivider).frame(width: 1)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("học tập").font(.headline)
@@ -511,7 +512,7 @@ struct ScriptSettingsView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 34)
                     .padding(.bottom, 16)
-                    .background(AppColor.field, in: RoundedRectangle(cornerRadius: AppMetrics.groupedCardRadius, style: .continuous))
+                    .outlinedSurface()
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -525,7 +526,7 @@ struct ScriptSettingsView: View {
                     }
                     .padding(.horizontal, 16)
                     .frame(minHeight: 56)
-                    .background(AppColor.field, in: RoundedRectangle(cornerRadius: AppMetrics.groupedCardRadius, style: .continuous))
+                    .outlinedSurface()
                     Text("Chỉ áp dụng trên máy này.")
                         .font(.footnote)
                         .foregroundStyle(AppColor.textSecondary)

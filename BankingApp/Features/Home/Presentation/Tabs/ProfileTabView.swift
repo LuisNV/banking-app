@@ -158,17 +158,14 @@ struct ProfileTabView: View {
         if let dashboard = viewModel.dashboard {
             HStack(spacing: 0) {
                 ProfileStat(value: "\(dashboard.streakDays)", label: "Ngày liên tiếp")
-                Rectangle().fill(AppColor.separator).frame(width: 0.5)
+                Rectangle().fill(AppColor.rowDivider).frame(width: 1)
                 ProfileStat(value: "\(dashboard.learner.wordsLearned)", label: "Từ đã học")
-                Rectangle().fill(AppColor.separator).frame(width: 0.5)
+                Rectangle().fill(AppColor.rowDivider).frame(width: 1)
                 ProfileStat(value: "\(dashboard.learner.lessonsCompleted)", label: "Bài hoàn thành")
             }
             .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 14)
-            .background(
-                AppColor.field,
-                in: RoundedRectangle(cornerRadius: AppMetrics.groupedCardRadius, style: .continuous)
-            )
+            .outlinedSurface()
         }
     }
 

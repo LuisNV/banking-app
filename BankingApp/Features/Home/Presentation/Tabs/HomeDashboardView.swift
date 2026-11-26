@@ -77,14 +77,15 @@ struct HomeDashboardView: View {
 
     private func stats(_ dashboard: HomeDashboard) -> some View {
         HStack(spacing: 12) {
-            HomeStatCard(value: "\(dashboard.streakDays) ngày", label: "Chuỗi học liên tiếp") {
+            HomeStatCard(value: "\(dashboard.streakDays) ngày", label: "Liên tiếp") {
                 StreakIcon()
             }
             // Mục tiêu lấy từ cài đặt học của người dùng; số phút đã học lấy từ dashboard.
             let goal = viewModel.dailyGoal ?? dashboard.dailyGoal
+            let reached = goal.studiedMinutes >= goal.targetMinutes && goal.targetMinutes > 0
             HomeStatCard(
-                value: "\(goal.studiedMinutes)/\(goal.targetMinutes) phút",
-                label: "Mục tiêu hôm nay"
+                value: reached ? "\(goal.studiedMinutes) phút" : "\(goal.studiedMinutes)/\(goal.targetMinutes) phút",
+                label: reached ? "Đạt mục tiêu \(goal.targetMinutes)′" : "Mục tiêu hôm nay"
             ) {
                 ProgressRing(fraction: goal.fraction)
             }
@@ -104,7 +105,7 @@ struct HomeDashboardView: View {
             .padding(.horizontal, 4)
             .padding(.top, 6)
 
-            LazyVGrid(columns: toolColumns, spacing: 10) {
+            LazyVGrid(columns: toolColumns, spacing: 14) {
                 ForEach(HomeTool.all) { tool in
                     NavigationLink(value: tool) {
                         HomeToolTile(tool: tool)

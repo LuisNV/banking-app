@@ -32,7 +32,7 @@ struct RegisterTopBar: View {
                     .foregroundStyle(AppColor.textSecondary)
                     .padding(.horizontal, 12)
                     .frame(height: 32)
-                    .background(AppColor.field, in: Capsule())
+                    .outlinedSurface(Capsule(), borderColor: AppColor.fieldBorder)
                     .accessibilityLabel("Bước \(stepNumber) trên \(stepCount)")
             }
         }

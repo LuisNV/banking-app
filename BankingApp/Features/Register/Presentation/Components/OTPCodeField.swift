@@ -44,9 +44,9 @@ struct OTPCodeField: View {
 
         return ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(isActive ? AppColor.background : AppColor.field)
+                .fill(AppColor.fieldBackground)
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(isActive ? AppColor.brand : .clear, lineWidth: 2)
+                .strokeBorder(isActive ? AppColor.brand : AppColor.fieldBorder, lineWidth: isActive ? 2 : 1.5)
 
             if digit.isEmpty && isActive {
                 Capsule()

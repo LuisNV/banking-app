@@ -228,10 +228,31 @@ struct OutlinedCard<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) { content }
-            .background(AppColor.fieldBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(AppColor.fieldBorder, lineWidth: 1.5)
-            }
+            .outlinedSurface(cornerRadius: 16)
+    }
+}
+
+extension View {
+    /// Bề mặt kiểu viền mảnh: nền trắng + viền xám nhạt (thay cho nền xám).
+    /// `borderColor`/`lineWidth` cho phép tô viền khi được chọn.
+    func outlinedSurface<S: InsettableShape>(
+        _ shape: S,
+        borderColor: Color = AppColor.cardBorder,
+        lineWidth: CGFloat = 1.5
+    ) -> some View {
+        background(AppColor.fieldBackground, in: shape)
+            .overlay { shape.strokeBorder(borderColor, lineWidth: lineWidth) }
+    }
+
+    func outlinedSurface(
+        cornerRadius: CGFloat = AppMetrics.groupedCardRadius,
+        borderColor: Color = AppColor.cardBorder,
+        lineWidth: CGFloat = 1.5
+    ) -> some View {
+        outlinedSurface(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
+            borderColor: borderColor,
+            lineWidth: lineWidth
+        )
     }
 }

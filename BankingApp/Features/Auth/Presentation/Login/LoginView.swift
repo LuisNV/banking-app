@@ -83,7 +83,7 @@ struct LoginView: View {
                     .foregroundStyle(AppColor.textPrimary)
                     .padding(.horizontal, 14)
                     .frame(height: 36)
-                    .background(AppColor.field, in: Capsule())
+                    .outlinedSurface(Capsule(), borderColor: AppColor.fieldBorder)
             }
             .accessibilityLabel("Đổi ngôn ngữ")
         }

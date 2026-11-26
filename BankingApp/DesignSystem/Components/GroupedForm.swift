@@ -16,17 +16,14 @@ struct IconTile: View {
     }
 }
 
-/// Thẻ nhóm nền xám bo góc lớn, chứa các dòng ngăn bởi `GroupedDivider`.
+/// Thẻ nhóm viền mảnh nền trắng bo góc lớn, chứa các dòng ngăn bởi `GroupedDivider`.
 struct GroupedCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
         VStack(spacing: 0) { content }
             .padding(.vertical, 4)
-            .background(
-                AppColor.field,
-                in: RoundedRectangle(cornerRadius: AppMetrics.groupedCardRadius, style: .continuous)
-            )
+            .outlinedSurface()
     }
 }
 
@@ -36,8 +33,8 @@ struct GroupedDivider: View {
 
     var body: some View {
         Rectangle()
-            .fill(AppColor.separator)
-            .frame(height: 0.5)
+            .fill(AppColor.rowDivider)
+            .frame(height: 1)
             .padding(.leading, leadingInset)
     }
 }
