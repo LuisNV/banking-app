@@ -94,6 +94,13 @@ Mọi phản hồi bọc trong envelope (`Core/Network/APIResponse.swift`):
 
 Ngoài ra dùng sẵn của Apple: Observation (`@Observable`), async/await, LocalAuthentication.
 
+## Icon & màn khởi động
+
+- **Icon app** (`Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, 1024×1024): chữ 听 trắng (Noto Serif SC Bold) trên nền xanh `#0A5BD3`, không bo góc (iOS tự bo).
+- **Launch Screen** của iOS (`UILaunchScreen` trong `project.yml`): nền `LaunchBackground` + ảnh `LaunchLogo` (ô trắng mờ chứa 听, 112 pt).
+- **Màn "Mở app"** (`App/SplashView.swift`): nối tiếp Launch Screen với cùng ảnh, cùng vị trí, hiện khoảng 0,9 giây kèm tên app, vòng xoay và phiên bản rồi mờ dần.
+- **Lớp phủ đang xử lý** (`DesignSystem/Components/LoadingOverlay.swift`): nền tối mờ, icon app với vòng xoay bao quanh, không có chữ (`message` chỉ cho VoiceOver).
+
 ## Kiến trúc
 
 ```
@@ -146,7 +153,6 @@ BankingAppTests/              # Test UseCase, Repository, ViewModel + Mocks
 
 ## Việc còn để giữ chỗ (TODO)
 
-- Logo, App Icon thật
 - Email hỗ trợ (`AppConfig.supportEmail`), link Điều khoản / Quyền riêng tư
 - Luồng Quên mật khẩu, màn hình từng công cụ học thử
 - Đa ngôn ngữ: chuỗi đang viết thẳng tiếng Việt, nên chuyển sang `Localizable.xcstrings`

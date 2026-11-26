@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Lớp phủ loading dùng chung: nền tối nhẹ phủ toàn màn hình, chặn thao tác,
-/// ở giữa là thẻ chứa vòng xoay và (tuỳ chọn) dòng mô tả.
+/// Lớp phủ loading dùng chung khi đang thực hiện một thao tác (đăng xuất, lưu…):
+/// nền tối mờ chặn thao tác, ở giữa là icon app với vòng xoay bao quanh. Không có chữ trên màn hình;
+/// `message` chỉ dùng cho VoiceOver.
 struct LoadingOverlay: View {
     var message: LocalizedStringKey?
 
@@ -10,31 +11,45 @@ struct LoadingOverlay: View {
             Color.black.opacity(0.35)
                 .ignoresSafeArea()
 
-            VStack(spacing: 12) {
-                ProgressView()
-                    .controlSize(.large)
-                    .tint(AppColor.brand)
-
-                if let message {
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(AppColor.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
+            ZStack {
+                SpinnerRing(lineWidth: 4)
+                    .frame(width: 96, height: 96)
+                BrandLogo(size: 64)
             }
-            .padding(24)
-            .frame(minWidth: 120, minHeight: 120)
-            .background(
-                AppColor.card,
-                in: RoundedRectangle(cornerRadius: AppMetrics.cardRadius, style: .continuous)
-            )
-            .shadow(color: .black.opacity(0.15), radius: 16, y: 4)
         }
         // Chặn tap xuyên xuống nội dung bên dưới khi đang loading.
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.updatesFrequently)
         .accessibilityLabel(message.map { Text($0) } ?? Text("Đang tải"))
+    }
+}
+
+/// Vòng xoay trắng: nền vòng mờ, một nửa vòng sáng chạy quanh.
+/// Bật "Giảm chuyển động" thì vòng đứng yên.
+struct SpinnerRing: View {
+    var lineWidth: CGFloat = 4
+    var color: Color = .white
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isSpinning = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.25), lineWidth: lineWidth)
+            Circle()
+                .trim(from: 0, to: 0.5)
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(isSpinning ? 360 : 0))
+                .animation(
+                    reduceMotion ? nil : .linear(duration: 0.9).repeatForever(autoreverses: false),
+                    value: isSpinning
+                )
+        }
+        .padding(lineWidth / 2)
+        .onAppear { isSpinning = true }
+        .accessibilityHidden(true)
     }
 }
 

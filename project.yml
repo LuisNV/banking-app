@@ -53,7 +53,10 @@ targets:
       path: BankingApp/Resources/Info.plist
       properties:
         CFBundleDisplayName: TingTing
-        UILaunchScreen: {}
+        # Launch Screen của iOS: nền xanh + logo 听, trùng với màn SplashView để chuyển cảnh liền mạch.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSFaceIDUsageDescription: Dùng khuôn mặt để đăng nhập TingTing nhanh hơn.
         NSCameraUsageDescription: Dùng camera để chụp ảnh đại diện.
