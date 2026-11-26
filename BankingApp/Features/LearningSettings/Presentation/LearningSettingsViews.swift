@@ -481,14 +481,21 @@ struct ScriptSettingsView: View {
                         Button {
                             if pinyinMode == .onTap { isPinyinRevealed.toggle() }
                         } label: {
-                            VStack(spacing: 2) {
-                                Text(showsPinyin ? "xuéxí" : " ")
-                                    .font(.subheadline)
-                                    .foregroundStyle(AppColor.textSecondary)
-                                Text(script.sample)
-                                    .font(.system(size: fontSize, weight: .medium))
-                            }
-                            .frame(minWidth: 96)
+                            // Chữ Hán là mốc căn giữa với cột "học tập"; pinyin nổi phía trên,
+                            // ẩn/hiện bằng độ mờ nên không làm xê dịch bố cục.
+                            Text(script.sample)
+                                .font(.system(size: fontSize, weight: .medium))
+                                .frame(minWidth: 96)
+                                .overlay(alignment: .top) {
+                                    Text(verbatim: "xuéxí")
+                                        .font(.subheadline)
+                                        .foregroundStyle(AppColor.textSecondary)
+                                        .fixedSize()
+                                        .alignmentGuide(.top) { $0[.bottom] + 2 }
+                                        .opacity(showsPinyin ? 1 : 0)
+                                        .animation(.easeOut(duration: 0.15), value: showsPinyin)
+                                        .accessibilityHidden(!showsPinyin)
+                                }
                         }
                         .buttonStyle(.plain)
                         .disabled(pinyinMode != .onTap)
@@ -503,7 +510,10 @@ struct ScriptSettingsView: View {
                         Spacer(minLength: 0)
                     }
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(16)
+                    // Chừa chỗ phía trên cho pinyin nổi.
+                    .padding(.horizontal, 16)
+                    .padding(.top, 34)
+                    .padding(.bottom, 16)
                     .background(AppColor.field, in: RoundedRectangle(cornerRadius: AppMetrics.groupedCardRadius, style: .continuous))
                 }
 
