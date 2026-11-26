@@ -29,26 +29,14 @@ open BankingApp.xcodeproj
 
 | Scheme trong Xcode | Gọi tới |
 |---|---|
-| `BankingApp` | **API thật** tại `API_BASE_URL` (mặc định trong `Config/Debug.xcconfig`, ghi đè bằng `Config/Local.xcconfig`) |
+| `BankingApp` | **API thật** tại `API_BASE_URL` (Debug: `project.yml` → `settings.configs.Debug`) |
 | `BankingApp (Mock)` | Backend giả, không gọi mạng. Mọi tài khoản, mật khẩu `123456` |
 
-- Địa chỉ backend mặc định nằm ở `Config/Debug.xcconfig` / `Config/Release.xcconfig`.
-- Địa chỉ riêng trên máy bạn: chép `Config/Local.xcconfig.example` thành `Config/Local.xcconfig` rồi sửa. File này không commit, **chỉ cần build lại (⌘R)**, không cần `xcodegen generate`.
-- Đổi nhanh khi chạy từ Xcode: *Edit Scheme* ▸ *Run* ▸ *Arguments* ▸ *Environment Variables*, thêm `API_BASE_URL` hoặc `USE_MOCK_API` (chỉ có tác dụng khi app được mở từ Xcode).
+- Sửa `API_BASE_URL` trong `project.yml` rồi **chạy lại `xcodegen generate`**. Sửa trực tiếp trong Xcode Build Settings sẽ bị ghi đè ở lần generate sau.
+- Đổi nhanh không cần generate: Xcode ▸ *Edit Scheme* ▸ *Run* ▸ *Arguments* ▸ *Environment Variables*, thêm `API_BASE_URL` hoặc `USE_MOCK_API`. Biến môi trường được ưu tiên hơn `project.yml`.
 - Khi app khởi động, console in dòng `⚙️ AppConfig — ...` cho biết đang dùng API nào. Bản Debug in đầy đủ request/response (mật khẩu được che).
 - Bản Release luôn gọi API thật.
 - Server `http://` trong mạng nội bộ (localhost, 192.168.x.x, `.local`) được phép khi phát triển. Chạy trên iPhone thật thì dùng IP máy tính trong LAN, không dùng `localhost`.
-
-### Cho iPhone gọi backend đang chạy trên Mac (Cloudflare Quick Tunnel)
-
-Không cần tên miền, có HTTPS, iPhone dùng 4G hay Wi-Fi khác đều gọi được — miễn là Mac đang bật, backend đang chạy và cửa sổ tunnel còn mở.
-
-```bash
-brew install cloudflared      # một lần
-scripts/tunnel.sh             # backend ở cổng 8081; cổng khác: scripts/tunnel.sh 8080
-```
-
-Script in ra địa chỉ `https://….trycloudflare.com` và tự ghi `API_BASE_URL` vào `Config/Local.xcconfig`. Build lại app (⌘R) là xong. Mỗi lần chạy lại script, địa chỉ đổi → build lại app.
 
 ### Hợp đồng API
 
