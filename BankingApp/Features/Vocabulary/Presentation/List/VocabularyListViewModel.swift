@@ -27,12 +27,6 @@ final class VocabularyListViewModel {
         }
     }
 
-    struct TopicGroup: Identifiable {
-        let topic: String
-        let entries: [VocabEntry]
-        var id: String { topic }
-    }
-
     /// Các cấp hiển thị trên thanh chọn; cấp chưa có dữ liệu bị khoá ("sắp có").
     let allLevels = [1, 2, 3, 4, 5, 6]
     let level = 1
@@ -55,23 +49,8 @@ final class VocabularyListViewModel {
         self.pronunciation = pronunciation
     }
 
-    var topics: [String] {
-        var seen: [String] = []
-        for entry in entries where !seen.contains(entry.word.topic) {
-            seen.append(entry.word.topic)
-        }
-        return seen
-    }
-
-    var groups: [TopicGroup] {
-        topics.compactMap { topic in
-            let items = entries.filter { $0.word.topic == topic && filter.includes($0.status) }
-            return items.isEmpty ? nil : TopicGroup(topic: topic, entries: items)
-        }
-    }
-
-    /// Danh sách đang hiện (theo bộ lọc), dùng cho nút trước/sau ở màn chi tiết.
-    var visibleEntries: [VocabEntry] { groups.flatMap(\.entries) }
+    /// Danh sách đang hiện theo bộ lọc (cũng dùng cho nút trước/sau ở màn chi tiết).
+    var visibleEntries: [VocabEntry] { entries.filter { filter.includes($0.status) } }
 
     func load() async {
         guard entries.isEmpty else { return await refresh() }

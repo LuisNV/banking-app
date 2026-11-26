@@ -46,7 +46,7 @@ struct VocabularyListView: View {
                 } else {
                     progressCard
                     filters
-                    wordGroups
+                    wordList
                 }
             }
             .padding(.horizontal, 16)
@@ -210,43 +210,30 @@ struct VocabularyListView: View {
     }
 
     @ViewBuilder
-    private var wordGroups: some View {
-        let groups = viewModel.groups
-        if groups.isEmpty {
+    private var wordList: some View {
+        let visible = viewModel.visibleEntries
+        Text("\(visible.count) từ")
+            .font(.footnote)
+            .foregroundStyle(AppColor.textSecondary)
+            .padding(.horizontal, 4)
+        if visible.isEmpty {
             Text("Không có từ nào ở mục “\(viewModel.filter.title)”.")
                 .font(.subheadline)
                 .foregroundStyle(AppColor.textSecondary)
                 .frame(maxWidth: .infinity, minHeight: 120)
-        }
-        let visible = viewModel.visibleEntries
-        ForEach(groups) { group in
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(group.topic.uppercased())
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(AppColor.textSecondary)
-                    Spacer()
-                    Text("\(group.entries.count) từ")
-                        .font(.footnote)
-                        .foregroundStyle(AppColor.textSecondary)
-                }
-                .padding(.horizontal, 4)
-                .accessibilityAddTraits(.isHeader)
-
-                GroupedCard {
-                    ForEach(Array(group.entries.enumerated()), id: \.element.id) { offset, entry in
-                        if offset > 0 { GroupedDivider(leadingInset: 14) }
-                        NavigationLink(value: VocabularyRoute.detail(
-                            entries: visible,
-                            index: visible.firstIndex(of: entry) ?? 0
-                        )) {
-                            VocabWordRow(entry: entry) { viewModel.play(entry.word) }
-                        }
-                        .buttonStyle(.plain)
+        } else {
+            // LazyVStack: danh sách đủ 150 từ vẫn cuộn mượt.
+            LazyVStack(spacing: 0) {
+                ForEach(Array(visible.enumerated()), id: \.element.id) { offset, entry in
+                    if offset > 0 { GroupedDivider(leadingInset: 14) }
+                    NavigationLink(value: VocabularyRoute.detail(entries: visible, index: offset)) {
+                        VocabWordRow(entry: entry) { viewModel.play(entry.word) }
                     }
+                    .buttonStyle(.plain)
                 }
             }
-            .padding(.top, 4)
+            .padding(.vertical, 4)
+            .outlinedSurface()
         }
     }
 
