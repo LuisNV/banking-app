@@ -71,7 +71,7 @@ final class FlashcardViewModel {
         }
         isFlipped = false
         index += 1
-        Task { _ = try? await repository.review(wordID: current.id, result: result) }
+        Task { [repository] in _ = try? await repository.review(current, result: result) }
     }
 
     func restart() {

@@ -85,7 +85,15 @@ actor MockVocabularyRepository: VocabularyRepository {
         return deck
     }
 
-    func review(wordID: String, result: ReviewResult) async throws -> VocabStatus {
+    func review(_ word: VocabWord, result: ReviewResult) async throws -> VocabStatus {
+        try await review(wordID: word.id, result: result)
+    }
+
+    func setStatus(_ word: VocabWord, status: VocabStatus) async throws -> VocabStatus {
+        try await setStatus(wordID: word.id, status: status)
+    }
+
+    private func review(wordID: String, result: ReviewResult) async throws -> VocabStatus {
         var item = progress[wordID] ?? Progress(status: .learning)
         switch result {
         case .good:
@@ -102,7 +110,7 @@ actor MockVocabularyRepository: VocabularyRepository {
         return item.status
     }
 
-    func setStatus(wordID: String, status: VocabStatus) async throws -> VocabStatus {
+    private func setStatus(wordID: String, status: VocabStatus) async throws -> VocabStatus {
         switch status {
         case .notStarted:
             progress[wordID] = nil

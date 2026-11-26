@@ -142,3 +142,43 @@ private extension Optional where Wrapped == String {
         return value
     }
 }
+
+// MARK: - Ghi tiến độ
+
+/// Body `POST v1/hsk/reviews` (1–100 thẻ, áp dụng theo thứ tự gửi).
+struct HSKReviewRequestDTO: Encodable, Equatable {
+    struct Item: Encodable, Equatable {
+        let level: Int
+        let entryNumber: Int
+        let result: String
+    }
+
+    let items: [Item]
+}
+
+struct HSKReviewResponseDTO: Decodable, Equatable {
+    let items: [HSKWordProgressDTO]
+    let levels: [HSKLevelDTO]?
+}
+
+/// Body `PUT v1/hsk/levels/{level}/words/{entryNumber}/progress`.
+struct HSKProgressPutDTO: Encodable, Equatable {
+    let status: String
+}
+
+struct HSKProgressResponseDTO: Decodable, Equatable {
+    let word: HSKWordProgressDTO
+    let level: HSKLevelDTO?
+}
+
+struct HSKWordProgressDTO: Decodable, Equatable {
+    let level: Int
+    let entryNumber: Int
+    let status: String?
+    let correctStreak: Int?
+    let dueAt: String?
+    let lastReviewedAt: String?
+
+    var wordID: String { HSKVocabularyMapping.wordID(level: level, entryNumber: entryNumber) }
+    var domainStatus: VocabStatus { HSKVocabularyMapping.status(status) }
+}

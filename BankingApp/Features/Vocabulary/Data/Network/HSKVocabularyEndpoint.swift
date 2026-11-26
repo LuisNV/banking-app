@@ -6,6 +6,8 @@ enum HSKVocabularyEndpoint: Endpoint {
     case levels
     case words(level: Int, status: String?, page: Int, size: Int)
     case word(level: Int, entryNumber: Int)
+    case reviews(HSKReviewRequestDTO)
+    case progress(level: Int, entryNumber: Int, body: HSKProgressPutDTO)
 
     var path: String {
         switch self {
@@ -15,10 +17,28 @@ enum HSKVocabularyEndpoint: Endpoint {
             return "v1/hsk/levels/\(level)/words"
         case .word(let level, let entryNumber):
             return "v1/hsk/levels/\(level)/words/\(entryNumber)"
+        case .reviews:
+            return "v1/hsk/reviews"
+        case .progress(let level, let entryNumber, _):
+            return "v1/hsk/levels/\(level)/words/\(entryNumber)/progress"
         }
     }
 
-    var method: HTTPMethod { .get }
+    var method: HTTPMethod {
+        switch self {
+        case .levels, .words, .word: return .get
+        case .reviews: return .post
+        case .progress: return .put
+        }
+    }
+
+    var body: (any Encodable)? {
+        switch self {
+        case .reviews(let dto): return dto
+        case .progress(_, _, let dto): return dto
+        case .levels, .words, .word: return nil
+        }
+    }
 
     var queryItems: [String: String]? {
         switch self {
@@ -26,7 +46,7 @@ enum HSKVocabularyEndpoint: Endpoint {
             var items = ["page": String(page), "size": String(size)]
             if let status { items["status"] = status }
             return items
-        case .levels, .word:
+        case .levels, .word, .reviews, .progress:
             return nil
         }
     }

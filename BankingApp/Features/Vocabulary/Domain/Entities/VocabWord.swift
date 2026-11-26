@@ -98,8 +98,8 @@ struct VocabPage: Equatable, Sendable {
     var hasMore: Bool { page + 1 < totalPages }
 }
 
-/// Kết quả một lần lật thẻ.
+/// Kết quả một lần lật thẻ (giá trị gửi lên `POST v1/hsk/reviews`).
 enum ReviewResult: String, Sendable {
-    case good = "GOOD"
-    case again = "AGAIN"
+    case good = "REMEMBERED"
+    case again = "FORGOT"
 }

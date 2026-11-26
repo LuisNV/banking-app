@@ -67,7 +67,7 @@ final class VocabularyDetailViewModel {
         isUpdating = true
         defer { isUpdating = false }
         do {
-            let status = try await repository.setStatus(wordID: word.id, status: target)
+            let status = try await repository.setStatus(word, status: target)
             entries[current].status = status
         } catch {
             errorMessage = error.localizedDescription

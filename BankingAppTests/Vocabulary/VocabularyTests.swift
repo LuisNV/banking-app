@@ -9,23 +9,27 @@ final class MockVocabularyRepositoryTests: XCTestCase {
         repository = MockVocabularyRepository()
     }
 
+    private func word(_ id: String) throws -> VocabWord {
+        try XCTUnwrap(MockVocabularyData.hsk1.first { $0.id == id })
+    }
+
     func test_good_threeTimes_becomesKnown() async throws {
-        let id = "hsk1-erzi"
-        var status = try await repository.review(wordID: id, result: .good)
+        let erzi = try word("hsk1-erzi")
+        var status = try await repository.review(erzi, result: .good)
         XCTAssertEqual(status, .learning)
-        status = try await repository.review(wordID: id, result: .good)
+        status = try await repository.review(erzi, result: .good)
         XCTAssertEqual(status, .learning)
-        status = try await repository.review(wordID: id, result: .good)
+        status = try await repository.review(erzi, result: .good)
         XCTAssertEqual(status, .known)
     }
 
     func test_again_onKnownWord_goesBackToLearning() async throws {
-        let status = try await repository.review(wordID: "hsk1-nihao", result: .again)
+        let status = try await repository.review(try word("hsk1-nihao"), result: .again)
         XCTAssertEqual(status, .learning)
     }
 
     func test_summary_countsStatuses() async throws {
-        _ = try await repository.setStatus(wordID: "hsk1-san", status: .known)
+        _ = try await repository.setStatus(try word("hsk1-san"), status: .known)
         let levels = try await repository.levels()
         XCTAssertEqual(levels.map(\.level), Array(1...9))
         XCTAssertFalse(levels[1].isAvailable)
@@ -238,7 +242,7 @@ final class HSKVocabularyDataTests: XCTestCase {
         XCTAssertEqual(HSKVocabularyEndpoint.word(level: 1, entryNumber: 147).path, "v1/hsk/levels/1/words/147")
     }
 
-    func test_repositoryImpl_quizUsesAllPages_andProgressIsReadOnly() async throws {
+    func test_repositoryImpl_quizUsesAllPages_andSendsAnswersAsReviews() async throws {
         let remote = StubHSKRemote(totalWords: 230)
         let repository = VocabularyRepositoryImpl(remote: remote, apiBaseURL: URL(string: "http://localhost:8081/api")!)
 
@@ -249,23 +253,73 @@ final class HSKVocabularyDataTests: XCTestCase {
         let pagesRequested = await remote.requestedPages
         XCTAssertEqual(pagesRequested, [0, 1, 2], "230 từ, mỗi trang 100 → 3 trang")
 
-        let answers = quiz.questions.map { QuizAnswer(questionID: $0.id, optionID: $0.correctOptionID, elapsed: 1) }
-        let result = try await repository.submitQuiz(quiz, answers: answers)
-        XCTAssertEqual(result.correct, 10)
-        XCTAssertTrue(result.statuses.isEmpty)
-        XCTAssertFalse(repository.canUpdateProgress)
-        do {
-            _ = try await repository.review(wordID: "hsk1-1", result: .good)
-            XCTFail("Chưa có API ghi tiến độ")
-        } catch {
-            XCTAssertEqual(error as? VocabularyError, .progressNotSupported)
+        // Câu đầu sai, còn lại đúng.
+        let answers = quiz.questions.enumerated().map { index, question in
+            QuizAnswer(
+                questionID: question.id,
+                optionID: index == 0 ? question.options.first(where: { $0.id != question.correctOptionID })!.id : question.correctOptionID,
+                elapsed: 1
+            )
         }
+        let result = try await repository.submitQuiz(quiz, answers: answers)
+        XCTAssertEqual(result.correct, 9)
+        XCTAssertTrue(repository.canUpdateProgress)
+
+        let bodies = await remote.reviewBodies
+        let sent = try XCTUnwrap(bodies.first)
+        XCTAssertEqual(sent.items.count, 10)
+        XCTAssertEqual(sent.items[0].result, "FORGOT")
+        XCTAssertEqual(sent.items[0].entryNumber, quiz.questions[0].word.entryNumber)
+        XCTAssertTrue(sent.items.dropFirst().allSatisfy { $0.result == "REMEMBERED" })
+        XCTAssertEqual(result.statuses[quiz.questions[0].word.id], .learning)
+    }
+
+    func test_repositoryImpl_setStatus_putsProgress() async throws {
+        let remote = StubHSKRemote(totalWords: 10)
+        let repository = VocabularyRepositoryImpl(remote: remote, apiBaseURL: URL(string: "http://localhost:8081/api")!)
+        let word = VocabWord(id: "hsk1-147", level: 1, entryNumber: 147, hanzi: "你好", pinyin: "nǐ hǎo", meaning: "xin chào")
+
+        let status = try await repository.setStatus(word, status: .known)
+
+        XCTAssertEqual(status, .known)
+        let put = await remote.progressPuts.first
+        XCTAssertEqual(put?.entryNumber, 147)
+        XCTAssertEqual(put?.status, "MASTERED")
+    }
+
+    func test_encode_reviewBody_matchesCurl() throws {
+        let body = HSKReviewRequestDTO(items: [
+            .init(level: 1, entryNumber: 147, result: ReviewResult.good.rawValue),
+            .init(level: 1, entryNumber: 4, result: ReviewResult.again.rawValue),
+        ])
+        let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(body)) as? [String: Any]
+        let items = try XCTUnwrap(json?["items"] as? [[String: Any]])
+        XCTAssertEqual(items[0]["entryNumber"] as? Int, 147)
+        XCTAssertEqual(items[0]["result"] as? String, "REMEMBERED")
+        XCTAssertEqual(items[1]["result"] as? String, "FORGOT")
+        XCTAssertEqual(HSKVocabularyEndpoint.reviews(body).path, "v1/hsk/reviews")
+        XCTAssertEqual(HSKVocabularyEndpoint.reviews(body).method, .post)
+        let put = HSKVocabularyEndpoint.progress(level: 1, entryNumber: 147, body: .init(status: "MASTERED"))
+        XCTAssertEqual(put.path, "v1/hsk/levels/1/words/147/progress")
+        XCTAssertEqual(put.method, .put)
+    }
+
+    func test_decode_progressResponse_notStarted() throws {
+        let response = try decode("""
+        {"code":0,"httpStatus":200,"message":"Thành công","traceId":"t","data":{
+          "word":{"level":1,"entryNumber":147,"status":"NOT_STARTED","correctStreak":0,"dueAt":null,"lastReviewedAt":null},
+          "level":{"level":1,"title":"Sơ cấp","available":true,"totalWords":300,"mastered":0,"learning":0,"notStarted":300}}}
+        """, as: HSKProgressResponseDTO.self)
+        XCTAssertEqual(response.word.domainStatus, .notStarted)
+        XCTAssertEqual(response.word.wordID, "hsk1-147")
     }
 }
 
 private actor StubHSKRemote: HSKVocabularyRemoteDataSource {
     let totalWords: Int
     private(set) var requestedPages: [Int] = []
+    private(set) var reviewBodies: [HSKReviewRequestDTO] = []
+    private(set) var progressPuts: [(entryNumber: Int, status: String)] = []
 
     init(totalWords: Int) {
         self.totalWords = totalWords
@@ -287,5 +341,24 @@ private actor StubHSKRemote: HSKVocabularyRemoteDataSource {
 
     func word(level: Int, entryNumber: Int) async throws -> HSKWordDetailDTO {
         throw NetworkError.api(code: 1026, httpStatus: 404, message: "Không tìm thấy từ vựng", traceId: nil)
+    }
+
+    func reviews(_ body: HSKReviewRequestDTO) async throws -> HSKReviewResponseDTO {
+        reviewBodies.append(body)
+        let items = body.items.map {
+            HSKWordProgressDTO(
+                level: $0.level, entryNumber: $0.entryNumber, status: "LEARNING",
+                correctStreak: $0.result == "REMEMBERED" ? 1 : 0, dueAt: nil, lastReviewedAt: nil
+            )
+        }
+        return HSKReviewResponseDTO(items: items, levels: nil)
+    }
+
+    func putProgress(level: Int, entryNumber: Int, body: HSKProgressPutDTO) async throws -> HSKProgressResponseDTO {
+        progressPuts.append((entryNumber, body.status))
+        return HSKProgressResponseDTO(
+            word: HSKWordProgressDTO(level: level, entryNumber: entryNumber, status: body.status, correctStreak: 3, dueAt: nil, lastReviewedAt: nil),
+            level: nil
+        )
     }
 }
