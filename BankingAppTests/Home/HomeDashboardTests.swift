@@ -35,7 +35,7 @@ private final class StubMyProfile: GetMyProfileUseCaseProtocol {
 
 private final class SpyPronunciation: PronunciationServiceProtocol {
     private(set) var spoken: [String] = []
-    func speak(_ text: String) { spoken.append(text) }
+    func speak(_ text: String, slow: Bool) { spoken.append(text) }
 }
 
 @MainActor

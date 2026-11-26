@@ -11,6 +11,8 @@ final class HomeViewModel {
 
     let user: User?
     var selectedTab: Tab = .home
+    /// Ẩn thanh tab nổi khi tab đang mở một màn con.
+    var isTabBarHidden = false
     private(set) var isLoggingOut = false
 
     // MARK: Dashboard

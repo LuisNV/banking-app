@@ -3,11 +3,12 @@ import SwiftUI
 /// Tab "Trang chủ": lời chào, chuỗi học, mục tiêu, bài đang học, từ của ngày, công cụ.
 struct HomeDashboardView: View {
     let viewModel: HomeViewModel
+    @State private var path = NavigationPath()
 
     private let toolColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: 12) {
                     header
@@ -36,9 +37,14 @@ struct HomeDashboardView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: HomeTool.self) { tool in
-                UtilityDetailPlaceholderView(item: tool.utilityItem)
-                    .navigationTitle(tool.fullTitle)
-                    .navigationBarTitleDisplayMode(.inline)
+                switch tool.kind {
+                case .hskVocabulary:
+                    VocabularyListView()
+                default:
+                    UtilityDetailPlaceholderView(item: tool.utilityItem)
+                        .navigationTitle(tool.fullTitle)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
             }
             .navigationDestination(for: String.self) { route in
                 if route == Self.allToolsRoute {
@@ -47,6 +53,10 @@ struct HomeDashboardView: View {
             }
         }
         .task { await viewModel.loadDashboard() }
+        // Màn con (công cụ, từ vựng…) có nút ở cuối màn: ẩn thanh tab nổi khi đã đi vào trong.
+        .onChange(of: path.count) { _, count in
+            withAnimation(.easeOut(duration: 0.2)) { viewModel.isTabBarHidden = count > 0 }
+        }
     }
 
     private static let allToolsRoute = "allTools"

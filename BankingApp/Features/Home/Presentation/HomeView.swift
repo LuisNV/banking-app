@@ -20,7 +20,10 @@ struct HomeView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            FloatingTabBar(selection: $viewModel.selectedTab)
+            if !viewModel.isTabBarHidden {
+                FloatingTabBar(selection: $viewModel.selectedTab)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .task { await viewModel.loadProfile() }
         // Lỗi tải không chặn thao tác: báo bằng toast, có "Thử lại".
