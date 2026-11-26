@@ -51,6 +51,9 @@ final class HomeViewModel {
         set { if !newValue { errorMessage = nil } }
     }
 
+    /// Cài đặt học (mục tiêu, nhắc học, chữ Hán) dùng chung cho Trang chủ và tab Cá nhân.
+    let learningSettings: LearningSettingsStore
+
     private let logoutUseCase: LogoutUseCaseProtocol
     private let uploadAvatarUseCase: UploadAvatarUseCaseProtocol
     private let getDashboardUseCase: GetHomeDashboardUseCaseProtocol
@@ -68,9 +71,11 @@ final class HomeViewModel {
         pronunciation: PronunciationServiceProtocol = Container.shared.pronunciationService(),
         prepareImage: @escaping (Data) -> Data? = AvatarImageProcessor.jpegData(from:),
         today: Date = Date(),
+        learningSettings: LearningSettingsStore? = nil,
         onLoggedOut: @escaping () -> Void
     ) {
         self.user = user
+        self.learningSettings = learningSettings ?? LearningSettingsStore()
         self.logoutUseCase = logoutUseCase
         self.uploadAvatarUseCase = uploadAvatarUseCase
         self.getDashboardUseCase = getDashboardUseCase
@@ -144,6 +149,12 @@ final class HomeViewModel {
         profileErrorMessage = nil
     }
 
+    /// Mục tiêu hôm nay: số phút đã học (từ dashboard) trên mục tiêu người dùng đã đặt.
+    var dailyGoal: DailyGoal? {
+        guard let studied = dashboard?.dailyGoal.studiedMinutes else { return nil }
+        return DailyGoal(studiedMinutes: studied, targetMinutes: learningSettings.settings.dailyGoalMinutes)
+    }
+
     func playWordOfTheDay() {
         guard let word = dashboard?.wordOfTheDay else { return }
         pronunciation.speak(word.hanzi)
@@ -152,6 +163,7 @@ final class HomeViewModel {
     func logout() async {
         isLoggingOut = true
         await logoutUseCase.execute()
+        await learningSettings.signOut()
         isLoggingOut = false
         onLoggedOut()
     }

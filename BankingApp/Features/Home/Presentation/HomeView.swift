@@ -23,6 +23,7 @@ struct HomeView: View {
             FloatingTabBar(selection: $viewModel.selectedTab)
         }
         .task { await viewModel.loadProfile() }
+        .task { await viewModel.learningSettings.load() }
         .overlay {
             if viewModel.isLoggingOut {
                 LoadingOverlay(message: "Đang đăng xuất...")

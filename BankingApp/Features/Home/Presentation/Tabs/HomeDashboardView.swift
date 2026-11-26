@@ -80,11 +80,13 @@ struct HomeDashboardView: View {
             HomeStatCard(value: "\(dashboard.streakDays) ngày", label: "Chuỗi học liên tiếp") {
                 StreakIcon()
             }
+            // Mục tiêu lấy từ cài đặt học của người dùng; số phút đã học lấy từ dashboard.
+            let goal = viewModel.dailyGoal ?? dashboard.dailyGoal
             HomeStatCard(
-                value: "\(dashboard.dailyGoal.studiedMinutes)/\(dashboard.dailyGoal.targetMinutes) phút",
+                value: "\(goal.studiedMinutes)/\(goal.targetMinutes) phút",
                 label: "Mục tiêu hôm nay"
             ) {
-                ProgressRing(fraction: dashboard.dailyGoal.fraction)
+                ProgressRing(fraction: goal.fraction)
             }
         }
     }

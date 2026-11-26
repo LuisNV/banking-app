@@ -26,6 +26,7 @@ struct ProfileTabView: View {
     @State private var settings = ProfileSettingsViewModel()
     @State private var isChangingAvatar = false
     @State private var isChangingPassword = false
+    @State private var activeLearningScreen: LearningSettingsScreen?
     @State private var isConfirmingLogout = false
 
     var body: some View {
@@ -56,6 +57,17 @@ struct ProfileTabView: View {
             }
             .task { await viewModel.loadDashboard() }
             .refreshable { await viewModel.loadProfile(force: true) }
+            // 3 màn cài đặt học: toàn màn hình (nút Lưu ở cuối, không bị thanh tab che).
+            .fullScreenCover(item: $activeLearningScreen) { screen in
+                switch screen {
+                case .dailyGoal:
+                    DailyGoalSettingsView(store: viewModel.learningSettings, streakDays: viewModel.dashboard?.streakDays)
+                case .reminder:
+                    ReminderSettingsView(store: viewModel.learningSettings)
+                case .script:
+                    ScriptSettingsView(store: viewModel.learningSettings)
+                }
+            }
             // Toàn màn hình để che thanh tab nổi (màn đổi mật khẩu có nút ở cuối).
             .fullScreenCover(isPresented: $isChangingPassword) {
                 ChangePasswordView(
@@ -193,34 +205,40 @@ struct ProfileTabView: View {
     }
 
     private var learningSection: some View {
-        let dashboard = viewModel.dashboard
+        let settings = viewModel.learningSettings.settings
         return VStack(spacing: 8) {
             ProfileSectionHeader(title: "Học tập")
             GroupedCard {
-                NavigationLink(value: Route.dailyGoal) {
+                Button {
+                    activeLearningScreen = .dailyGoal
+                } label: {
                     ProfileRowLabel(
                         title: "Mục tiêu mỗi ngày",
                         systemImage: "target",
                         tint: Color(.systemOrange),
-                        value: dashboard.map { "\($0.dailyGoal.targetMinutes) phút" }
+                        value: "\(settings.dailyGoalMinutes) phút"
                     )
                 }
                 GroupedDivider()
-                NavigationLink(value: Route.reminder) {
+                Button {
+                    activeLearningScreen = .reminder
+                } label: {
                     ProfileRowLabel(
                         title: "Nhắc học",
                         systemImage: "bell.fill",
                         tint: Color(.systemRed),
-                        value: dashboard.map { $0.learner.reminderTime ?? "Tắt" }
+                        value: settings.reminder.enabled ? settings.reminder.time.string : "Tắt"
                     )
                 }
                 GroupedDivider()
-                NavigationLink(value: Route.script) {
+                Button {
+                    activeLearningScreen = .script
+                } label: {
                     ProfileRowLabel(
                         title: "Chữ Hán",
                         systemImage: "globe",
                         tint: Color(.systemIndigo),
-                        value: dashboard?.learner.scriptName
+                        value: settings.script.title
                     )
                 }
             }

@@ -73,10 +73,11 @@ struct ChangePasswordView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
             if viewModel.step != .done {
-                Text(viewModel.step == .form ? "1 / 2" : "2 / 2")
+                let stepNumber = viewModel.step == .form ? 1 : 2
+                Text(verbatim: "\(stepNumber) / 2")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(AppColor.textSecondary)
-                    .accessibilityLabel(viewModel.step == .form ? "Bước 1 trên 2" : "Bước 2 trên 2")
+                    .accessibilityLabel(Text(verbatim: "Bước \(stepNumber) trên 2"))
             }
         }
     }
