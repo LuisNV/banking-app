@@ -102,7 +102,8 @@ private struct CapsuleChipStyle: ButtonStyle {
             .foregroundStyle(isEnabled ? AppColor.brand : AppColor.textSecondary)
             .padding(.horizontal, 16)
             .frame(height: 40)
-            .background(AppColor.field, in: Capsule())
+            .background(AppColor.fieldBackground, in: Capsule())
+            .overlay(Capsule().strokeBorder(AppColor.fieldBorder, lineWidth: 1.5))
             .opacity(configuration.isPressed ? 0.7 : 1)
             .contentShape(Capsule())
             .frame(minHeight: 44)
@@ -137,20 +138,17 @@ private struct ChangeEmailSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                GroupedCard {
-                    FormFieldRow(
-                        "Email mới",
-                        systemImage: "envelope.fill",
-                        tint: Color(.systemIndigo),
-                        text: $viewModel.newEmail,
-                        status: viewModel.changeEmailError == nil ? .none : .invalid,
-                        textContentType: .emailAddress,
-                        keyboardType: .emailAddress,
-                        submitLabel: .send,
-                        onSubmit: submit
-                    )
-                    .focused($isFocused)
-                }
+                FormField(
+                    "Email mới",
+                    text: $viewModel.newEmail,
+                    status: viewModel.changeEmailError == nil ? .none : .invalid,
+                    textContentType: .emailAddress,
+                    keyboardType: .emailAddress,
+                    submitLabel: .send,
+                    onSubmit: submit,
+                    isFocused: isFocused
+                )
+                .focused($isFocused)
                 if let error = viewModel.changeEmailError {
                     Label(error, systemImage: "exclamationmark.circle")
                         .font(.footnote)

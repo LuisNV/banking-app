@@ -14,63 +14,51 @@ struct RegisterInfoStep: View {
                 )
                 .padding(.bottom, 20)
 
-                GroupedCard {
-                    FormFieldRow(
+                VStack(spacing: 16) {
+                    FormField(
                         "Họ và tên",
-                        systemImage: "person.fill",
-                        tint: Color(.systemBlue),
                         text: $viewModel.fullName,
                         status: viewModel.status(for: .fullName),
                         textContentType: .name,
                         autocapitalization: .words,
-                        onSubmit: { focusedField = .email }
+                        onSubmit: { focusedField = .email },
+                        isFocused: focusedField == .fullName
                     )
                     .focused($focusedField, equals: .fullName)
 
-                    GroupedDivider()
-
-                    FormFieldRow(
+                    FormField(
                         "Email",
-                        systemImage: "envelope.fill",
-                        tint: Color(.systemIndigo),
                         text: $viewModel.email,
                         status: viewModel.status(for: .email),
                         textContentType: .emailAddress,
                         keyboardType: .emailAddress,
-                        onSubmit: { focusedField = .phone }
+                        onSubmit: { focusedField = .phone },
+                        isFocused: focusedField == .email
                     )
                     .focused($focusedField, equals: .email)
 
-                    GroupedDivider()
-
-                    FormFieldRow(
+                    FormField(
                         "Số điện thoại",
-                        systemImage: "phone.fill",
-                        tint: Color(.systemGreen),
                         text: $viewModel.phone,
                         status: viewModel.status(for: .phone),
                         textContentType: .telephoneNumber,
                         keyboardType: .phonePad,
-                        submitLabel: .done
+                        submitLabel: .done,
+                        isFocused: focusedField == .phone
                     )
                     .focused($focusedField, equals: .phone)
-                }
 
-                GroupedCard {
-                    HStack(spacing: 14) {
-                        IconTile(systemImage: "calendar", tint: Color(.systemRed))
+                    FormFieldBox(label: "Ngày sinh") {
                         DatePicker(
                             "Ngày sinh",
                             selection: $viewModel.birthDate,
                             in: ...Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
                             displayedComponents: .date
                         )
+                        .labelsHidden()
                         .tint(AppColor.brand)
                     }
-                    .padding(.horizontal, 16)
-                    .frame(minHeight: 52)
                 }
-                .padding(.top, 12)
 
                 GroupedFooter(text: "Giúp TingTing gợi ý lộ trình học phù hợp với bạn.")
             }

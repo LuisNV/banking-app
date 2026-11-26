@@ -16,6 +16,18 @@ enum AppColor {
     static let textSecondary = Color(.secondaryLabel)
     static let textTertiary = Color(.tertiaryLabel)
 
+    /// Viền ô nhập (kiểu viền mảnh): xám nhạt ở chế độ sáng, trắng mờ ở chế độ tối.
+    static let fieldBorder = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(white: 1, alpha: 0.18)
+            : UIColor(red: 0xD5 / 255, green: 0xDA / 255, blue: 0xE3 / 255, alpha: 1)
+    })
+    /// Nền ô nhập: trắng (sáng) / nền hệ thống (tối).
+    static let fieldBackground = Color(.systemBackground)
+    /// Quầng sáng quanh ô đang nhập.
+    static let focusRing = brand.opacity(0.15)
+    static let fieldLabel = Color(.label).opacity(0.78)
+
     static let success = Color(.systemGreen)
     static let danger = Color(.systemRed)
 }

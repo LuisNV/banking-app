@@ -28,7 +28,7 @@ struct RegisterDoneStep: View {
             }
             .padding(.top, 8)
 
-            GroupedCard {
+            OutlinedCard {
                 HStack(spacing: 14) {
                     IconTile(systemImage: "envelope.fill", tint: Color(.systemIndigo))
                     VStack(alignment: .leading, spacing: 1) {

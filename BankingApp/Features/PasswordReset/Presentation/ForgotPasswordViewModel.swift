@@ -214,7 +214,7 @@ final class ForgotPasswordViewModel {
         }
     }
 
-    func status(for field: PasswordResetField) -> FormFieldRow.Status {
+    func status(for field: PasswordResetField) -> FormFieldStatus {
         if error(for: field) != nil { return .invalid }
         if field == .confirm, !confirmPassword.isEmpty, confirmPassword == newPassword { return .valid }
         return .none

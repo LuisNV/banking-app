@@ -107,26 +107,27 @@ struct LoginView: View {
     }
 
     private var form: some View {
-        VStack(spacing: 12) {
-            AppTextField(
+        VStack(spacing: 16) {
+            FormField(
                 "Email / Số điện thoại",
-                systemImage: "person",
                 text: $viewModel.username,
                 textContentType: .username,
+                keyboardType: .emailAddress,
                 submitLabel: .next,
-                onSubmit: { focusedField = .password }
+                onSubmit: { focusedField = .password },
+                isFocused: focusedField == .username
             )
             .focused($focusedField, equals: .username)
 
-            AppTextField(
+            FormField(
                 "Mật khẩu",
-                systemImage: "lock",
                 text: $viewModel.password,
                 isSecure: true,
                 isRevealed: $viewModel.isPasswordVisible,
                 textContentType: .password,
                 submitLabel: .go,
-                onSubmit: submit
+                onSubmit: submit,
+                isFocused: focusedField == .password
             )
             .focused($focusedField, equals: .password)
 

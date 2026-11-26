@@ -88,96 +88,91 @@ private struct ChangePasswordFormStep: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                FormSectionTitle("Mật khẩu hiện tại")
-                GroupedCard {
-                    FormFieldRow(
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    FormField(
                         "Mật khẩu hiện tại",
-                        systemImage: "lock.fill",
-                        tint: Color(.systemGray),
                         text: binding(\.currentPassword, field: .current),
                         status: viewModel.status(for: .current),
                         isSecure: true,
                         isRevealed: $viewModel.isCurrentRevealed,
                         textContentType: .password,
-                        onSubmit: { focused = .new }
+                        onSubmit: { focused = .new },
+                        isFocused: focused == .current
                     )
                     .focused($focused, equals: .current)
                     .disabled(viewModel.isLocked)
-                }
-                FormErrorText(viewModel.error(for: .current))
-                HStack {
-                    Spacer()
-                    Button("Quên mật khẩu?", action: onForgotPassword)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(AppColor.brand)
-                        .frame(minHeight: 44)
-                        .padding(.trailing, 8)
+                    FormErrorText(viewModel.error(for: .current))
+                    HStack {
+                        Spacer()
+                        Button("Quên mật khẩu?", action: onForgotPassword)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppColor.brand)
+                            .frame(minHeight: 44)
+                    }
+                    .padding(.top, -6)
                 }
 
-                FormSectionTitle("Mật khẩu mới").padding(.top, 14)
-                GroupedCard {
-                    FormFieldRow(
+                VStack(alignment: .leading, spacing: 6) {
+                    FormField(
                         "Mật khẩu mới",
-                        systemImage: "key.fill",
-                        tint: AppColor.brand,
                         text: binding(\.newPassword, field: .new),
                         status: viewModel.status(for: .new),
                         isSecure: true,
                         isRevealed: $viewModel.isNewRevealed,
                         textContentType: .newPassword,
-                        onSubmit: { focused = .confirm }
+                        onSubmit: { focused = .confirm },
+                        isFocused: focused == .new
                     )
                     .focused($focused, equals: .new)
+                    FormErrorText(viewModel.error(for: .new))
+                }
 
-                    GroupedDivider()
+                PasswordStrengthRow(strength: viewModel.passwordEvaluation.strength)
 
-                    FormFieldRow(
+                VStack(alignment: .leading, spacing: 6) {
+                    FormField(
                         "Nhập lại mật khẩu mới",
-                        systemImage: "key.fill",
-                        tint: AppColor.brand,
                         text: binding(\.confirmPassword, field: .confirm),
                         status: viewModel.status(for: .confirm),
                         isSecure: true,
                         isRevealed: $viewModel.isNewRevealed,
                         textContentType: .newPassword,
                         submitLabel: .go,
-                        onSubmit: submit
+                        onSubmit: submit,
+                        isFocused: focused == .confirm
                     )
                     .focused($focused, equals: .confirm)
-
-                    GroupedDivider(leadingInset: 16)
-                    PasswordStrengthRow(strength: viewModel.passwordEvaluation.strength)
-                }
-                FormErrorText(viewModel.error(for: .new))
-                FormErrorText(viewModel.error(for: .confirm))
-
-                FormSectionTitle("Yêu cầu", uppercase: false).padding(.top, 14)
-                GroupedCard {
-                    let evaluation = viewModel.passwordEvaluation
-                    PasswordRequirementRow(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
-                    PasswordRequirementRow(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
-                    PasswordRequirementRow(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
-                    PasswordRequirementRow(text: "Khác mật khẩu hiện tại", isMet: viewModel.isDifferentFromCurrent)
+                    FormErrorText(viewModel.error(for: .confirm))
                 }
 
-                GroupedCard {
-                    HStack(spacing: 14) {
-                        IconTile(systemImage: "laptopcomputer.and.iphone", tint: Color(.systemOrange))
-                        Toggle("Đăng xuất khỏi thiết bị khác", isOn: $viewModel.logoutOtherDevices)
-                            .tint(AppColor.success)
+                let evaluation = viewModel.passwordEvaluation
+                FlowLayout(spacing: 8) {
+                    PasswordRequirementChip(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
+                    PasswordRequirementChip(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
+                    PasswordRequirementChip(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
+                    PasswordRequirementChip(text: "Khác mật khẩu hiện tại", isMet: viewModel.isDifferentFromCurrent)
+                }
+
+                OutlinedCard {
+                    Toggle(isOn: $viewModel.logoutOtherDevices) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Đăng xuất khỏi thiết bị khác")
+                                .font(.body.weight(.semibold))
+                            Text("Máy này vẫn giữ đăng nhập. Các máy khác phải đăng nhập lại bằng mật khẩu mới.")
+                                .font(.footnote)
+                                .foregroundStyle(AppColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
+                    .tint(AppColor.success)
                     .padding(.horizontal, 16)
-                    .frame(minHeight: 52)
+                    .padding(.vertical, 12)
                 }
-                .padding(.top, 14)
-                Text("Máy này vẫn giữ đăng nhập. Các máy khác phải đăng nhập lại bằng mật khẩu mới.")
-                    .font(.footnote)
-                    .foregroundStyle(AppColor.textSecondary)
-                    .padding(.horizontal, 20)
+                .padding(.top, 4)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
             .padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -349,7 +344,7 @@ private struct ChangePasswordDoneStep: View {
                     .multilineTextAlignment(.center)
             }
 
-            GroupedCard {
+            OutlinedCard {
                 DeviceRow(
                     systemImage: "iphone",
                     tint: Color(.systemGreen),

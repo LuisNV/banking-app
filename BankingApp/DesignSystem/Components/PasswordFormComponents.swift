@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Tiêu đề nhóm kiểu iOS phía trên một `GroupedCard` ("MẬT KHẨU MỚI").
+/// Tiêu đề nhóm kiểu iOS phía trên một nhóm ô nhập ("MẬT KHẨU MỚI").
 struct FormSectionTitle: View {
     let title: String
     var uppercase = true
@@ -32,8 +32,7 @@ struct FormErrorText: View {
             Label(message, systemImage: "exclamationmark.circle")
                 .font(.footnote)
                 .foregroundStyle(AppColor.danger)
-                .padding(.horizontal, 20)
-                .padding(.top, 2)
+                .padding(.horizontal, 2)
         }
     }
 }
@@ -54,8 +53,7 @@ struct PasswordStrengthRow: View {
                 .tint(color)
                 .animation(.easeOut(duration: 0.2), value: strength)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 2)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Độ mạnh mật khẩu: \(title)")
     }
@@ -88,30 +86,7 @@ struct PasswordStrengthRow: View {
     }
 }
 
-/// Một yêu cầu mật khẩu: dấu ✓ xanh khi đạt, vòng tròn rỗng khi chưa.
-struct PasswordRequirementRow: View {
-    let text: String
-    let isMet: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20))
-                .foregroundStyle(isMet ? AppColor.success : AppColor.textTertiary)
-                .contentTransition(.symbolEffect(.replace))
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(isMet ? AppColor.textPrimary : AppColor.textSecondary)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .frame(minHeight: 40)
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(isMet ? "Đạt" : "Chưa đạt")
-    }
-}
-
-/// Nút viên thuốc nhỏ nền xám (Gửi lại mã, Mở Mail).
+/// Nút viên thuốc nhỏ kiểu viền mảnh (Gửi lại mã, Mở Mail).
 struct PillChipButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
@@ -121,7 +96,8 @@ struct PillChipButtonStyle: ButtonStyle {
             .foregroundStyle(isEnabled ? AppColor.brand : AppColor.textSecondary)
             .padding(.horizontal, 16)
             .frame(height: 40)
-            .background(AppColor.field, in: Capsule())
+            .background(AppColor.fieldBackground, in: Capsule())
+            .overlay(Capsule().strokeBorder(AppColor.fieldBorder, lineWidth: 1.5))
             .opacity(configuration.isPressed ? 0.7 : 1)
             .contentShape(Capsule())
             .frame(minHeight: 44)

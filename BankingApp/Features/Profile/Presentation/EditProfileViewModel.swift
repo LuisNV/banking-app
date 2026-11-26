@@ -108,7 +108,7 @@ final class EditProfileViewModel {
         return hasTriedSaving || !isEmpty ? message : nil
     }
 
-    func status(for field: ProfileField) -> FormFieldRow.Status {
+    func status(for field: ProfileField) -> FormFieldStatus {
         error(for: field) == nil ? .none : .invalid
     }
 

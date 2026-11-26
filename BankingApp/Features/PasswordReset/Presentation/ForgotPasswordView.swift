@@ -98,32 +98,29 @@ private struct ForgotIdentifierStep: View {
                     .padding(.horizontal, 12)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    GroupedCard {
-                        FormFieldRow(
-                            "Email / Số điện thoại",
-                            systemImage: "person.fill",
-                            tint: Color(.systemIndigo),
-                            text: Binding(
-                                get: { viewModel.identifier },
-                                set: { viewModel.identifier = $0; viewModel.didEditIdentifier() }
-                            ),
-                            status: viewModel.identifierError == nil ? .none : .invalid,
-                            textContentType: .username,
-                            keyboardType: .emailAddress,
-                            submitLabel: .send,
-                            onSubmit: send
-                        )
-                        .focused($isFocused)
-                    }
+                    FormField(
+                        "Email / Số điện thoại",
+                        text: Binding(
+                            get: { viewModel.identifier },
+                            set: { viewModel.identifier = $0; viewModel.didEditIdentifier() }
+                        ),
+                        status: viewModel.identifierError == nil ? .none : .invalid,
+                        textContentType: .username,
+                        keyboardType: .emailAddress,
+                        submitLabel: .send,
+                        onSubmit: send,
+                        isFocused: isFocused
+                    )
+                    .focused($isFocused)
                     FormErrorText(viewModel.identifierError)
                     Text("Nhập số điện thoại thì mã vẫn được gửi tới email đã đăng ký với số đó.")
                         .font(.footnote)
                         .foregroundStyle(AppColor.textSecondary)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 2)
                 }
                 .padding(.top, 18)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
         }
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -257,48 +254,46 @@ private struct ForgotNewPasswordStep: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 16)
 
-                GroupedCard {
-                    FormFieldRow(
-                        "Mật khẩu mới",
-                        systemImage: "key.fill",
-                        tint: AppColor.brand,
-                        text: binding(\.newPassword, field: .new),
-                        status: viewModel.status(for: .new),
-                        isSecure: true,
-                        isRevealed: $viewModel.isPasswordRevealed,
-                        textContentType: .newPassword,
-                        onSubmit: { focused = .confirm }
-                    )
-                    .focused($focused, equals: .new)
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        FormField(
+                            "Mật khẩu mới",
+                            text: binding(\.newPassword, field: .new),
+                            status: viewModel.status(for: .new),
+                            isSecure: true,
+                            isRevealed: $viewModel.isPasswordRevealed,
+                            textContentType: .newPassword,
+                            onSubmit: { focused = .confirm },
+                            isFocused: focused == .new
+                        )
+                        .focused($focused, equals: .new)
+                        FormErrorText(viewModel.error(for: .new))
+                    }
 
-                    GroupedDivider()
-
-                    FormFieldRow(
-                        "Nhập lại mật khẩu mới",
-                        systemImage: "key.fill",
-                        tint: AppColor.brand,
-                        text: binding(\.confirmPassword, field: .confirm),
-                        status: viewModel.status(for: .confirm),
-                        isSecure: true,
-                        isRevealed: $viewModel.isPasswordRevealed,
-                        textContentType: .newPassword,
-                        submitLabel: .go,
-                        onSubmit: submit
-                    )
-                    .focused($focused, equals: .confirm)
-
-                    GroupedDivider(leadingInset: 16)
                     PasswordStrengthRow(strength: viewModel.passwordEvaluation.strength)
-                }
-                FormErrorText(viewModel.error(for: .new))
-                FormErrorText(viewModel.error(for: .confirm))
 
-                FormSectionTitle("Yêu cầu", uppercase: false).padding(.top, 14)
-                GroupedCard {
+                    VStack(alignment: .leading, spacing: 6) {
+                        FormField(
+                            "Nhập lại mật khẩu mới",
+                            text: binding(\.confirmPassword, field: .confirm),
+                            status: viewModel.status(for: .confirm),
+                            isSecure: true,
+                            isRevealed: $viewModel.isPasswordRevealed,
+                            textContentType: .newPassword,
+                            submitLabel: .go,
+                            onSubmit: submit,
+                            isFocused: focused == .confirm
+                        )
+                        .focused($focused, equals: .confirm)
+                        FormErrorText(viewModel.error(for: .confirm))
+                    }
+
                     let evaluation = viewModel.passwordEvaluation
-                    PasswordRequirementRow(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
-                    PasswordRequirementRow(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
-                    PasswordRequirementRow(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
+                    FlowLayout(spacing: 8) {
+                        PasswordRequirementChip(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
+                        PasswordRequirementChip(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
+                        PasswordRequirementChip(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
+                    }
                 }
 
                 HStack(alignment: .top, spacing: 10) {
@@ -313,7 +308,7 @@ private struct ForgotNewPasswordStep: View {
                 .background(Color(.systemOrange).opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .padding(.top, 14)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 24)
         }
@@ -376,7 +371,7 @@ private struct ForgotDoneStep: View {
                     .multilineTextAlignment(.center)
             }
 
-            GroupedCard {
+            OutlinedCard {
                 ForgotInfoRow(
                     systemImage: "laptopcomputer.and.iphone",
                     tint: Color(.systemOrange),

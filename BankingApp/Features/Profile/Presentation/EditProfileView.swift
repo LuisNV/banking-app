@@ -12,21 +12,72 @@ struct EditProfileView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                contactCard
-                fieldErrors([.fullName, .phone, .email])
-                if viewModel.isChangingEmail {
-                    GroupedFooter(text: "Đổi email cần nhập mật khẩu hiện tại. Email mới sẽ cần xác minh lại.")
+            VStack(alignment: .leading, spacing: 16) {
+                field(.fullName) {
+                    FormField(
+                        "Họ và tên",
+                        text: binding(\.fullName, field: .fullName),
+                        status: viewModel.status(for: .fullName),
+                        textContentType: .name,
+                        autocapitalization: .words,
+                        onSubmit: { focusedField = .phone },
+                        isFocused: focusedField == .fullName
+                    )
+                    .focused($focusedField, equals: .fullName)
                 }
 
-                addressCard.padding(.top, 12)
-                fieldErrors([.address])
+                field(.phone) {
+                    FormField(
+                        "Số điện thoại",
+                        text: binding(\.phone, field: .phone),
+                        status: viewModel.status(for: .phone),
+                        textContentType: .telephoneNumber,
+                        keyboardType: .phonePad,
+                        isFocused: focusedField == .phone
+                    )
+                    .focused($focusedField, equals: .phone)
+                }
 
-                personalCard.padding(.top, 12)
-                fieldErrors([.birthDate])
+                field(.email) {
+                    FormField(
+                        "Email",
+                        text: binding(\.email, field: .email),
+                        status: viewModel.status(for: .email),
+                        textContentType: .emailAddress,
+                        keyboardType: .emailAddress,
+                        onSubmit: { focusedField = .address },
+                        isFocused: focusedField == .email
+                    )
+                    .focused($focusedField, equals: .email)
+                    if viewModel.isChangingEmail {
+                        Text("Đổi email cần nhập mật khẩu hiện tại. Email mới sẽ cần xác minh lại.")
+                            .font(.footnote)
+                            .foregroundStyle(AppColor.textSecondary)
+                            .padding(.horizontal, 2)
+                    }
+                }
+
+                field(.address) {
+                    FormField(
+                        "Địa chỉ",
+                        text: binding(\.address, field: .address),
+                        status: viewModel.status(for: .address) == .invalid ? .invalid : .none,
+                        textContentType: .fullStreetAddress,
+                        autocapitalization: .sentences,
+                        submitLabel: .return,
+                        isMultiline: true,
+                        isFocused: focusedField == .address
+                    )
+                    .focused($focusedField, equals: .address)
+                }
+
+                HStack(alignment: .top, spacing: 12) {
+                    genderField
+                    field(.birthDate) { birthDateField }
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
             .padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -63,94 +114,24 @@ struct EditProfileView: View {
 
     // MARK: Sections
 
-    private var contactCard: some View {
-        GroupedCard {
-            FormFieldRow(
-                "Họ và tên",
-                systemImage: "person.fill",
-                tint: Color(.systemBlue),
-                text: binding(\.fullName, field: .fullName),
-                status: viewModel.status(for: .fullName),
-                textContentType: .name,
-                autocapitalization: .words,
-                onSubmit: { focusedField = .phone }
-            )
-            .focused($focusedField, equals: .fullName)
-
-            GroupedDivider()
-
-            FormFieldRow(
-                "Số điện thoại",
-                systemImage: "phone.fill",
-                tint: Color(.systemGreen),
-                text: binding(\.phone, field: .phone),
-                status: viewModel.status(for: .phone),
-                textContentType: .telephoneNumber,
-                keyboardType: .phonePad
-            )
-            .focused($focusedField, equals: .phone)
-
-            GroupedDivider()
-
-            FormFieldRow(
-                "Email",
-                systemImage: "envelope.fill",
-                tint: Color(.systemIndigo),
-                text: binding(\.email, field: .email),
-                status: viewModel.status(for: .email),
-                textContentType: .emailAddress,
-                keyboardType: .emailAddress,
-                onSubmit: { focusedField = .address }
-            )
-            .focused($focusedField, equals: .email)
+    private var genderField: some View {
+        FormFieldBox(label: "Giới tính") {
+            Picker("Giới tính", selection: $viewModel.gender) {
+                Text("Chưa chọn").tag(UserProfile.Gender?.none)
+                ForEach(UserProfile.Gender.allCases, id: \.self) { gender in
+                    Text(gender.title).tag(UserProfile.Gender?.some(gender))
+                }
+            }
+            .labelsHidden()
+            .tint(AppColor.textPrimary)
+            .padding(.leading, -12)
         }
     }
 
-    private var addressCard: some View {
-        GroupedCard {
-            HStack(alignment: .top, spacing: 14) {
-                IconTile(systemImage: "house.fill", tint: Color(.systemOrange))
-                    .padding(.top, 11)
-                TextField("Địa chỉ", text: binding(\.address, field: .address), axis: .vertical)
-                    .lineLimit(1...4)
-                    .textContentType(.fullStreetAddress)
-                    .focused($focusedField, equals: .address)
-                    .padding(.vertical, 15)
-                if viewModel.status(for: .address) == .invalid {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(AppColor.danger)
-                        .padding(.top, 14)
-                        .accessibilityLabel("Chưa hợp lệ")
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-    }
-
-    private var personalCard: some View {
-        GroupedCard {
-            HStack(spacing: 14) {
-                IconTile(systemImage: "person.2.fill", tint: Color(.systemPurple))
-                Text("Giới tính")
-                Spacer()
-                Picker("Giới tính", selection: $viewModel.gender) {
-                    Text("Chưa chọn").tag(UserProfile.Gender?.none)
-                    ForEach(UserProfile.Gender.allCases, id: \.self) { gender in
-                        Text(gender.title).tag(UserProfile.Gender?.some(gender))
-                    }
-                }
-                .labelsHidden()
-                .tint(AppColor.textSecondary)
-            }
-            .padding(.horizontal, 16)
-            .frame(minHeight: 52)
-
-            GroupedDivider()
-
-            HStack(spacing: 14) {
-                IconTile(systemImage: "calendar", tint: Color(.systemRed))
-                if let birthDate = viewModel.birthDate {
+    private var birthDateField: some View {
+        FormFieldBox(label: "Ngày sinh", status: viewModel.status(for: .birthDate) == .invalid ? .invalid : .none) {
+            if let birthDate = viewModel.birthDate {
+                HStack(spacing: 0) {
                     DatePicker(
                         "Ngày sinh",
                         selection: Binding(
@@ -160,7 +141,10 @@ struct EditProfileView: View {
                         in: ...Date(),
                         displayedComponents: .date
                     )
+                    .labelsHidden()
                     .tint(AppColor.brand)
+                    .padding(.leading, -6)
+                    Spacer(minLength: 0)
                     Button {
                         viewModel.birthDate = nil
                     } label: {
@@ -171,32 +155,28 @@ struct EditProfileView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Xoá ngày sinh")
-                } else {
-                    Text("Ngày sinh")
-                    Spacer()
-                    Button("Thêm") {
-                        viewModel.birthDate = Calendar.current.date(byAdding: .year, value: -18, to: Date())
-                    }
                 }
+            } else {
+                Button {
+                    viewModel.birthDate = Calendar.current.date(byAdding: .year, value: -18, to: Date())
+                } label: {
+                    Label("Thêm", systemImage: "plus")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(AppColor.brand)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Thêm ngày sinh")
             }
-            .padding(.horizontal, 16)
-            .frame(minHeight: 52)
         }
     }
 
-    @ViewBuilder
-    private func fieldErrors(_ fields: [ProfileField]) -> some View {
-        let messages = fields.compactMap { viewModel.error(for: $0) }
-        if !messages.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(messages, id: \.self) { message in
-                    Label(message, systemImage: "exclamationmark.circle")
-                        .font(.footnote)
-                        .foregroundStyle(AppColor.danger)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 4)
+    /// Ô nhập kèm dòng lỗi của server/kiểm tra (nếu có) ngay bên dưới.
+    private func field<Content: View>(_ field: ProfileField, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            content()
+            FormErrorText(viewModel.error(for: field))
         }
     }
 
@@ -240,22 +220,19 @@ private struct PasswordConfirmSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                GroupedCard {
-                    FormFieldRow(
-                        "Mật khẩu hiện tại",
-                        systemImage: "lock.fill",
-                        tint: Color(.systemGray),
-                        text: $viewModel.currentPassword,
-                        status: viewModel.passwordError == nil ? .none : .invalid,
-                        isSecure: true,
-                        isRevealed: $viewModel.isPasswordRevealed,
-                        textContentType: .password,
-                        submitLabel: .done,
-                        onSubmit: confirm
-                    )
-                    .focused($isFocused)
-                    .disabled(viewModel.isPasswordLocked)
-                }
+                FormField(
+                    "Mật khẩu hiện tại",
+                    text: $viewModel.currentPassword,
+                    status: viewModel.passwordError == nil ? .none : .invalid,
+                    isSecure: true,
+                    isRevealed: $viewModel.isPasswordRevealed,
+                    textContentType: .password,
+                    submitLabel: .done,
+                    onSubmit: confirm,
+                    isFocused: isFocused
+                )
+                .focused($isFocused)
+                .disabled(viewModel.isPasswordLocked)
                 if let error = viewModel.passwordError {
                     Label(error, systemImage: "exclamationmark.circle")
                         .font(.footnote)

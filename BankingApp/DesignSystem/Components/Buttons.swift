@@ -48,12 +48,13 @@ struct TintedButtonStyle: ButtonStyle {
     }
 }
 
-/// Nút tròn icon (nút menu, đóng...).
+/// Nút tròn icon (nút menu, đóng...). Mặc định kiểu viền mảnh nền trắng;
+/// truyền `background` để dùng nền đặc.
 struct CircleIconButton: View {
     let systemImage: String
     let accessibilityLabel: String
     var foreground: Color = AppColor.textPrimary
-    var background: Color = AppColor.field
+    var background: Color? = nil
     var size: CGFloat = 44
     let action: () -> Void
 
@@ -63,7 +64,12 @@ struct CircleIconButton: View {
                 .font(.system(size: size * 0.4, weight: .semibold))
                 .foregroundStyle(foreground)
                 .frame(width: size, height: size)
-                .background(background, in: Circle())
+                .background(background ?? AppColor.fieldBackground, in: Circle())
+                .overlay {
+                    if background == nil {
+                        Circle().strokeBorder(AppColor.fieldBorder, lineWidth: 1.5)
+                    }
+                }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)

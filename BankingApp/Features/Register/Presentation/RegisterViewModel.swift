@@ -152,7 +152,7 @@ final class RegisterViewModel {
         return RegistrationField.allCases.compactMap { errors[$0] }
     }
 
-    func status(for field: RegistrationField) -> FormFieldRow.Status {
+    func status(for field: RegistrationField) -> FormFieldStatus {
         if serverFieldErrors[field] != nil { return .invalid }
         let value: String
         switch field {
@@ -211,7 +211,7 @@ final class RegisterViewModel {
         PasswordEvaluation.evaluate(password)
     }
 
-    var confirmStatus: FormFieldRow.Status {
+    var confirmStatus: FormFieldStatus {
         if confirmPassword.isEmpty { return .none }
         return confirmPassword == password ? .valid : .invalid
     }

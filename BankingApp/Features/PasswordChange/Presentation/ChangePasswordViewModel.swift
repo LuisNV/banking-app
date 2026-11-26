@@ -94,7 +94,7 @@ final class ChangePasswordViewModel {
         }
     }
 
-    func status(for field: PasswordChangeField) -> FormFieldRow.Status {
+    func status(for field: PasswordChangeField) -> FormFieldStatus {
         if error(for: field) != nil { return .invalid }
         if field == .confirm, !confirmPassword.isEmpty, confirmPassword == newPassword { return .valid }
         return .none

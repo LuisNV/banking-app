@@ -16,70 +16,63 @@ struct RegisterPasswordStep: View {
                 )
                 .padding(.bottom, 20)
 
-                GroupedCard {
-                    FormFieldRow(
+                VStack(alignment: .leading, spacing: 16) {
+                    FormField(
                         "Mật khẩu",
-                        systemImage: "lock.fill",
-                        tint: Color(.systemGray),
                         text: $viewModel.password,
                         isSecure: true,
                         isRevealed: $viewModel.isPasswordVisible,
                         textContentType: .newPassword,
-                        onSubmit: { focusedField = .confirm }
+                        onSubmit: { focusedField = .confirm },
+                        isFocused: focusedField == .password
                     )
                     .focused($focusedField, equals: .password)
 
-                    GroupedDivider()
+                    strengthRow
 
-                    FormFieldRow(
+                    FormField(
                         "Nhập lại mật khẩu",
-                        systemImage: "lock.fill",
-                        tint: Color(.systemGray),
                         text: $viewModel.confirmPassword,
                         status: viewModel.confirmStatus,
                         isSecure: true,
                         isRevealed: $viewModel.isPasswordVisible,
                         textContentType: .newPassword,
                         submitLabel: .go,
-                        onSubmit: submit
+                        onSubmit: submit,
+                        isFocused: focusedField == .confirm
                     )
                     .focused($focusedField, equals: .confirm)
 
-                    GroupedDivider(leadingInset: 16)
-
-                    strengthRow
-                }
-
-                if viewModel.confirmStatus == .invalid {
-                    GroupedFooter(text: "Mật khẩu nhập lại chưa khớp.", isError: true)
-                }
-
-                if viewModel.biometricType != .none {
-                    GroupedCard {
-                        HStack(spacing: 14) {
-                            IconTile(systemImage: viewModel.biometricType.systemImage, tint: Color(.systemGreen))
-                            Toggle("Đăng nhập bằng \(viewModel.biometricType.displayName)", isOn: $viewModel.biometricEnabled)
-                                .tint(AppColor.success)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(minHeight: 52)
+                    if viewModel.confirmStatus == .invalid {
+                        FormErrorText("Mật khẩu nhập lại chưa khớp.")
+                            .padding(.top, -8)
                     }
-                    .padding(.top, 12)
-                    GroupedFooter(text: "Lần sau mở app, chỉ cần nhìn vào máy để đăng nhập.")
-                }
 
-                Text("Yêu cầu")
-                    .font(.footnote)
-                    .foregroundStyle(AppColor.textSecondary)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 14)
-
-                GroupedCard {
                     let evaluation = viewModel.passwordEvaluation
-                    RequirementRow(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
-                    RequirementRow(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
-                    RequirementRow(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
-                    RequirementRow(text: "Ký tự đặc biệt (không bắt buộc)", isMet: evaluation.hasSpecialCharacter)
+                    FlowLayout(spacing: 8) {
+                        PasswordRequirementChip(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
+                        PasswordRequirementChip(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
+                        PasswordRequirementChip(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
+                        PasswordRequirementChip(text: "Ký tự đặc biệt (tuỳ chọn)", isMet: evaluation.hasSpecialCharacter)
+                    }
+
+                    if viewModel.biometricType != .none {
+                        OutlinedCard {
+                            Toggle(isOn: $viewModel.biometricEnabled) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Đăng nhập bằng \(viewModel.biometricType.displayName)")
+                                        .font(.body.weight(.semibold))
+                                    Text("Lần sau mở app, chỉ cần nhìn vào máy để đăng nhập.")
+                                        .font(.footnote)
+                                        .foregroundStyle(AppColor.textSecondary)
+                                }
+                            }
+                            .tint(AppColor.success)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                        .padding(.top, 4)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -107,8 +100,7 @@ struct RegisterPasswordStep: View {
                 .tint(strength.color)
                 .animation(.easeOut(duration: 0.2), value: strength)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 2)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Độ mạnh mật khẩu: \(strength.title)")
     }
@@ -133,28 +125,6 @@ struct RegisterPasswordStep: View {
     private func submit() {
         focusedField = nil
         Task { await viewModel.createAccount() }
-    }
-}
-
-private struct RequirementRow: View {
-    let text: String
-    let isMet: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20))
-                .foregroundStyle(isMet ? AppColor.success : AppColor.textTertiary)
-                .contentTransition(.symbolEffect(.replace))
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(isMet ? AppColor.textPrimary : AppColor.textSecondary)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .frame(minHeight: 40)
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(isMet ? "Đạt" : "Chưa đạt")
     }
 }
 
