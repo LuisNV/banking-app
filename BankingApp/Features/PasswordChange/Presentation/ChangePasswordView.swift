@@ -4,7 +4,13 @@ import SwiftUI
 struct ChangePasswordView: View {
     // Tạo ViewModel ngay trong @State (không dùng giá trị mặc định của tham số init:
     // ViewModel thuộc MainActor nên tạo ở đó dễ báo lỗi biên dịch).
+    /// Email/SĐT của tài khoản, điền sẵn khi bấm "Quên mật khẩu?".
+    var accountIdentifier: String?
+    /// Đặt lại mật khẩu xong (mọi phiên đã bị thu hồi): bên ngoài đưa về màn đăng nhập.
+    var onPasswordReset: (String) -> Void = { _ in }
+
     @State private var viewModel = ChangePasswordViewModel()
+    @State private var isShowingForgotPassword = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -12,7 +18,7 @@ struct ChangePasswordView: View {
             Group {
                 switch viewModel.step {
                 case .form:
-                    ChangePasswordFormStep(viewModel: viewModel)
+                    ChangePasswordFormStep(viewModel: viewModel, onForgotPassword: { isShowingForgotPassword = true })
                         .transition(.push(from: .leading))
                 case .verify:
                     ChangePasswordVerifyStep(viewModel: viewModel)
@@ -38,6 +44,12 @@ struct ChangePasswordView: View {
             }
         }
         .interactiveDismissDisabled(viewModel.isLoading)
+        .fullScreenCover(isPresented: $isShowingForgotPassword) {
+            ForgotPasswordView(identifier: accountIdentifier) { identifier in
+                dismiss()
+                onPasswordReset(identifier)
+            }
+        }
     }
 
     @ToolbarContentBuilder
@@ -74,12 +86,13 @@ struct ChangePasswordView: View {
 
 private struct ChangePasswordFormStep: View {
     @Bindable var viewModel: ChangePasswordViewModel
+    let onForgotPassword: () -> Void
     @FocusState private var focused: PasswordChangeField?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                SectionTitle("Mật khẩu hiện tại")
+                FormSectionTitle("Mật khẩu hiện tại")
                 GroupedCard {
                     FormFieldRow(
                         "Mật khẩu hiện tại",
@@ -95,9 +108,17 @@ private struct ChangePasswordFormStep: View {
                     .focused($focused, equals: .current)
                     .disabled(viewModel.isLocked)
                 }
-                ErrorText(viewModel.error(for: .current))
+                FormErrorText(viewModel.error(for: .current))
+                HStack {
+                    Spacer()
+                    Button("Quên mật khẩu?", action: onForgotPassword)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppColor.brand)
+                        .frame(minHeight: 44)
+                        .padding(.trailing, 8)
+                }
 
-                SectionTitle("Mật khẩu mới").padding(.top, 14)
+                FormSectionTitle("Mật khẩu mới").padding(.top, 14)
                 GroupedCard {
                     FormFieldRow(
                         "Mật khẩu mới",
@@ -129,18 +150,18 @@ private struct ChangePasswordFormStep: View {
                     .focused($focused, equals: .confirm)
 
                     GroupedDivider(leadingInset: 16)
-                    StrengthRow(strength: viewModel.passwordEvaluation.strength)
+                    PasswordStrengthRow(strength: viewModel.passwordEvaluation.strength)
                 }
-                ErrorText(viewModel.error(for: .new))
-                ErrorText(viewModel.error(for: .confirm))
+                FormErrorText(viewModel.error(for: .new))
+                FormErrorText(viewModel.error(for: .confirm))
 
-                SectionTitle("Yêu cầu", uppercase: false).padding(.top, 14)
+                FormSectionTitle("Yêu cầu", uppercase: false).padding(.top, 14)
                 GroupedCard {
                     let evaluation = viewModel.passwordEvaluation
-                    RequirementRow(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
-                    RequirementRow(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
-                    RequirementRow(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
-                    RequirementRow(text: "Khác mật khẩu hiện tại", isMet: viewModel.isDifferentFromCurrent)
+                    PasswordRequirementRow(text: "Ít nhất \(PasswordEvaluation.minimumLength) ký tự", isMet: evaluation.hasMinimumLength)
+                    PasswordRequirementRow(text: "Chữ hoa và chữ thường", isMet: evaluation.hasUpperAndLowercase)
+                    PasswordRequirementRow(text: "Ít nhất 1 chữ số", isMet: evaluation.hasDigit)
+                    PasswordRequirementRow(text: "Khác mật khẩu hiện tại", isMet: viewModel.isDifferentFromCurrent)
                 }
 
                 GroupedCard {
@@ -247,13 +268,13 @@ private struct ChangePasswordVerifyStep: View {
                     } label: {
                         Label(viewModel.resendTitle, systemImage: "arrow.clockwise").monospacedDigit()
                     }
-                    .buttonStyle(ChipButtonStyle())
+                    .buttonStyle(PillChipButtonStyle())
                     .disabled(!viewModel.canResend)
 
                     Button("Mở Mail") {
                         if let url = URL(string: "message://") { openURL(url) }
                     }
-                    .buttonStyle(ChipButtonStyle())
+                    .buttonStyle(PillChipButtonStyle())
                 }
                 .padding(.top, 12)
 
@@ -373,113 +394,6 @@ private struct ChangePasswordDoneStep: View {
 
 // MARK: - Thành phần nhỏ
 
-private struct SectionTitle: View {
-    let title: String
-    var uppercase = true
-
-    init(_ title: String, uppercase: Bool = true) {
-        self.title = title
-        self.uppercase = uppercase
-    }
-
-    var body: some View {
-        Text(uppercase ? title.uppercased() : title)
-            .font(.footnote)
-            .foregroundStyle(AppColor.textSecondary)
-            .padding(.leading, 20)
-            .accessibilityAddTraits(.isHeader)
-    }
-}
-
-private struct ErrorText: View {
-    let message: String?
-
-    init(_ message: String?) {
-        self.message = message
-    }
-
-    var body: some View {
-        if let message {
-            Label(message, systemImage: "exclamationmark.circle")
-                .font(.footnote)
-                .foregroundStyle(AppColor.danger)
-                .padding(.horizontal, 20)
-                .padding(.top, 2)
-        }
-    }
-}
-
-private struct StrengthRow: View {
-    let strength: PasswordStrength
-
-    var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("Độ mạnh").foregroundStyle(AppColor.textSecondary)
-                Spacer()
-                Text(title).fontWeight(.semibold).foregroundStyle(color)
-            }
-            .font(.footnote)
-            ProgressView(value: progress)
-                .tint(color)
-                .animation(.easeOut(duration: 0.2), value: strength)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Độ mạnh mật khẩu: \(title)")
-    }
-
-    private var title: String {
-        switch strength {
-        case .empty: return "—"
-        case .weak: return "Yếu"
-        case .medium: return "Trung bình"
-        case .strong: return "Mạnh"
-        }
-    }
-
-    private var color: Color {
-        switch strength {
-        case .empty: return AppColor.textTertiary
-        case .weak: return AppColor.danger
-        case .medium: return Color(.systemOrange)
-        case .strong: return AppColor.success
-        }
-    }
-
-    private var progress: Double {
-        switch strength {
-        case .empty: return 0
-        case .weak: return 0.25
-        case .medium: return 0.6
-        case .strong: return 1
-        }
-    }
-}
-
-private struct RequirementRow: View {
-    let text: String
-    let isMet: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20))
-                .foregroundStyle(isMet ? AppColor.success : AppColor.textTertiary)
-                .contentTransition(.symbolEffect(.replace))
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(isMet ? AppColor.textPrimary : AppColor.textSecondary)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .frame(minHeight: 40)
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(isMet ? "Đạt" : "Chưa đạt")
-    }
-}
-
 private struct DeviceRow: View {
     let systemImage: String
     let tint: Color
@@ -501,22 +415,5 @@ private struct DeviceRow: View {
         .padding(.vertical, 10)
         .frame(minHeight: 60)
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// Nút viên thuốc nhỏ nền xám (Gửi lại mã, Mở Mail).
-private struct ChipButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(isEnabled ? AppColor.brand : AppColor.textSecondary)
-            .padding(.horizontal, 16)
-            .frame(height: 40)
-            .background(AppColor.field, in: Capsule())
-            .opacity(configuration.isPressed ? 0.7 : 1)
-            .contentShape(Capsule())
-            .frame(minHeight: 44)
     }
 }

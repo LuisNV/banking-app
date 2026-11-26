@@ -59,6 +59,11 @@ final class AuthRepositoryImpl: AuthRepository {
         }
     }
 
+    func discardSession() {
+        local.clearTokens()
+        local.saveUser(nil)
+    }
+
     func saveSession(_ session: AuthSession) throws {
         try local.saveTokens(accessToken: session.accessToken, refreshToken: session.refreshToken)
         local.saveUser(session.user)

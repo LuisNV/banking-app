@@ -15,6 +15,7 @@ private final class CountingRepository: AuthRepository {
     func hasStoredSession() -> Bool { true }
     func storedUser() -> User? { nil }
     func logout() async {}
+    func discardSession() {}
     func saveSession(_ session: AuthSession) throws {}
     func rememberedUsername() -> String? { nil }
     func setRememberedUsername(_ username: String?) {}

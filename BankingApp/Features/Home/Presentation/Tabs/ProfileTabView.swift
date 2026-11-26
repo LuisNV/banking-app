@@ -58,7 +58,13 @@ struct ProfileTabView: View {
             .refreshable { await viewModel.loadProfile(force: true) }
             // Toàn màn hình để che thanh tab nổi (màn đổi mật khẩu có nút ở cuối).
             .fullScreenCover(isPresented: $isChangingPassword) {
-                ChangePasswordView()
+                ChangePasswordView(
+                    accountIdentifier: viewModel.profile?.email ?? viewModel.user?.username,
+                    onPasswordReset: { _ in
+                        // Server đã thu hồi mọi phiên, kể cả máy này: về màn đăng nhập.
+                        Task { await viewModel.logout() }
+                    }
+                )
             }
             .avatarPicker(isPresented: $isChangingAvatar) { jpegData in
                 Task { await viewModel.uploadAvatar(from: jpegData) }

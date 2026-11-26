@@ -65,6 +65,16 @@ final class LoginViewModel {
         }
     }
 
+    /// Vừa đặt lại mật khẩu: điền sẵn email/SĐT, xoá mật khẩu cũ và cập nhật lại
+    /// nút sinh trắc học (phiên cũ đã bị xoá nên không còn đăng nhập bằng Face ID được).
+    func didResetPassword(identifier: String) {
+        username = identifier
+        password = ""
+        let preferences = getPreferencesUseCase.execute()
+        biometricType = preferences.biometricType
+        canUseBiometricLogin = preferences.canUseBiometricLogin
+    }
+
     func login() async {
         guard !isLoading else { return }
         isLoading = true

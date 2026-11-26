@@ -3,6 +3,7 @@ import SwiftUI
 struct LoginView: View {
     @State private var viewModel: LoginViewModel
     @State private var utilitiesViewModel = UtilitiesViewModel()
+    @State private var isShowingForgotPassword = false
     private let onRegister: () -> Void
     @FocusState private var focusedField: Field?
 
@@ -24,6 +25,11 @@ struct LoginView: View {
             )
         }
         .onAppear { viewModel.onAppear() }
+        .fullScreenCover(isPresented: $isShowingForgotPassword) {
+            ForgotPasswordView(identifier: viewModel.username) { identifier in
+                viewModel.didResetPassword(identifier: identifier)
+            }
+        }
         .onChange(of: viewModel.isDrawerOpen) { _, isOpen in
             if isOpen { focusedField = nil }
         }
@@ -138,7 +144,8 @@ struct LoginView: View {
                 Spacer()
 
                 Button("Quên mật khẩu?") {
-                    // TODO: điều hướng tới luồng khôi phục mật khẩu.
+                    focusedField = nil
+                    isShowingForgotPassword = true
                 }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(AppColor.brand)
