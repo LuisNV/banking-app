@@ -99,7 +99,7 @@ final class AppPopupCenter {
             return nil
         }
         let window = PassthroughWindow(windowScene: scene)
-        window.center = self
+        window.popupCenter = self
         window.windowLevel = .alert + 1
         window.backgroundColor = .clear
         let host = UIHostingController(rootView: AppPopupHost(center: self))
@@ -115,13 +115,14 @@ final class AppPopupCenter {
 
 /// Cửa sổ nhận chạm khi có popup; khi chỉ có toast thì chỉ nhận chạm trong khung toast.
 private final class PassthroughWindow: UIWindow {
-    weak var center: AppPopupCenter?
+    /// Không đặt tên `center`: `UIView` đã có thuộc tính `center` (CGPoint).
+    weak var popupCenter: AppPopupCenter?
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        guard let center else { return nil }
-        let hasPopup = MainActor.assumeIsolated { center.popup != nil }
+        guard let popupCenter else { return nil }
+        let hasPopup = MainActor.assumeIsolated { popupCenter.popup != nil }
         if hasPopup { return super.hitTest(point, with: event) }
-        let toastFrame = MainActor.assumeIsolated { center.toastFrame }
+        let toastFrame = MainActor.assumeIsolated { popupCenter.toastFrame }
         return toastFrame.contains(point) ? super.hitTest(point, with: event) : nil
     }
 }
