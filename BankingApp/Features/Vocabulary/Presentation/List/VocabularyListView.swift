@@ -8,12 +8,13 @@ enum VocabularyRoute: Hashable {
 /// Nguồn thẻ cho một lượt học thẻ ghi nhớ.
 enum FlashcardSource: Hashable, Identifiable {
     case level(Int)
-    case words([String])
+    /// Ôn lại đúng các từ này (từ làm sai trong bài kiểm tra).
+    case words([VocabWord])
 
     var id: String {
         switch self {
         case .level(let level): return "level-\(level)"
-        case .words(let ids): return "words-" + ids.joined(separator: ",")
+        case .words(let words): return "words-" + words.map(\.id).joined(separator: ",")
         }
     }
 }
@@ -23,7 +24,7 @@ struct QuizLaunch: Identifiable {
     let config: QuizConfig
 }
 
-/// Màn "Từ vựng HSK": chọn cấp, tiến độ, học thẻ / kiểm tra, danh sách từ theo chủ đề.
+/// Màn "Từ vựng HSK": chọn cấp, tiến độ, học thẻ / kiểm tra, danh sách từ (tải dần khi cuộn).
 struct VocabularyListView: View {
     @State private var viewModel = VocabularyListViewModel()
     @State private var flashcardSource: FlashcardSource?
@@ -33,17 +34,17 @@ struct VocabularyListView: View {
     @State private var afterQuiz: AfterQuiz?
 
     private enum AfterQuiz {
-        case review([String])
+        case review([VocabWord])
         case newQuiz
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                levelPicker
-                if viewModel.entries.isEmpty {
+                if viewModel.isEmptyState {
                     placeholder
                 } else {
+                    levelPicker
                     progressCard
                     filters
                     wordList
@@ -62,12 +63,9 @@ struct VocabularyListView: View {
             }
         }
         .task { await viewModel.load() }
-        .onAppear { Task { await viewModel.refresh() } }
+        .onAppear { refresh() }
         .sheet(isPresented: $isShowingQuizSetup, onDismiss: startPendingQuiz) {
-            QuizSetupSheet(
-                level: viewModel.level,
-                summary: viewModel.summary
-            ) { config in
+            QuizSetupSheet(level: viewModel.selectedLevel, summary: viewModel.summary) { config in
                 pendingQuiz = config
                 isShowingQuizSetup = false
             }
@@ -78,7 +76,7 @@ struct VocabularyListView: View {
         .fullScreenCover(item: $quizLaunch, onDismiss: handleAfterQuiz) { launch in
             QuizView(
                 viewModel: QuizViewModel(config: launch.config),
-                onReviewWrongWords: { ids in afterQuiz = .review(ids) },
+                onReviewWrongWords: { words in afterQuiz = .review(words) },
                 onNewQuiz: { afterQuiz = .newQuiz }
             )
         }
@@ -89,34 +87,36 @@ struct VocabularyListView: View {
     private var levelPicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(viewModel.allLevels, id: \.self) { level in
-                    let isAvailable = viewModel.isAvailable(level)
-                    let isSelected = level == viewModel.level
+                ForEach(viewModel.levels) { level in
+                    let isSelected = level.level == viewModel.selectedLevel
                     Button {
-                        if !isAvailable {
+                        if level.isAvailable {
+                            Task { await viewModel.select(level: level.level) }
+                        } else {
                             AppPopupCenter.shared.showToast(AppToast(
-                                title: "HSK \(level) sắp có",
-                                message: "Hiện TingTing mới có từ vựng HSK 1."
+                                title: "HSK \(level.level) sắp có",
+                                message: "Từ vựng cấp này đang được cập nhật."
                             ))
                         }
                     } label: {
                         HStack(spacing: 6) {
-                            Text("HSK \(level)")
-                            if !isAvailable {
+                            Text("HSK \(level.level)")
+                            if !level.isAvailable {
                                 Image(systemName: "lock.fill").font(.system(size: 11))
                             }
                         }
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(isSelected ? .white : (isAvailable ? AppColor.textPrimary : AppColor.textTertiary))
+                        .foregroundStyle(isSelected ? .white : (level.isAvailable ? AppColor.textPrimary : AppColor.textTertiary))
                         .padding(.horizontal, 14)
                         .frame(height: 36)
                         .background(Capsule().fill(isSelected ? AppColor.brand : AppColor.fieldBackground))
                         .overlay {
                             if !isSelected { Capsule().strokeBorder(AppColor.cardBorder, lineWidth: 1.5) }
                         }
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(isAvailable ? "HSK \(level)" : "HSK \(level), sắp có")
+                    .accessibilityLabel(level.isAvailable ? "HSK \(level.level)" : "HSK \(level.level), sắp có")
                     .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
@@ -128,7 +128,7 @@ struct VocabularyListView: View {
         let summary = viewModel.summary
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("HSK \(viewModel.level) · Sơ cấp").font(.title3.bold())
+                Text(viewModel.levelTitle).font(.title3.bold())
                 Spacer()
                 (Text("\(summary.started)").fontWeight(.bold).foregroundStyle(AppColor.textPrimary)
                  + Text("/\(summary.total) từ"))
@@ -148,7 +148,7 @@ struct VocabularyListView: View {
 
             HStack(spacing: 10) {
                 Button {
-                    flashcardSource = .level(viewModel.level)
+                    flashcardSource = .level(viewModel.selectedLevel)
                 } label: {
                     Label("Học thẻ ghi nhớ", systemImage: "rectangle.on.rectangle")
                         .font(.subheadline.weight(.semibold))
@@ -179,6 +179,7 @@ struct VocabularyListView: View {
                 }
                 .buttonStyle(.plain)
             }
+            .disabled(summary.total == 0)
             .padding(.top, 2)
         }
         .padding(16)
@@ -198,7 +199,7 @@ struct VocabularyListView: View {
             HStack(spacing: 8) {
                 ForEach(VocabularyListViewModel.Filter.allCases, id: \.self) { filter in
                     Button(filter.title) {
-                        withAnimation(.snappy) { viewModel.filter = filter }
+                        Task { await viewModel.setFilter(filter) }
                     }
                     .buttonStyle(SelectableChipStyle(isSelected: viewModel.filter == filter))
                     .accessibilityAddTraits(viewModel.filter == filter ? .isSelected : [])
@@ -211,18 +212,20 @@ struct VocabularyListView: View {
 
     @ViewBuilder
     private var wordList: some View {
-        let visible = viewModel.visibleEntries
-        Text("\(visible.count) từ")
-            .font(.footnote)
-            .foregroundStyle(AppColor.textSecondary)
-            .padding(.horizontal, 4)
+        let visible = viewModel.entries
+        HStack(spacing: 8) {
+            Text("\(viewModel.totalItems) từ")
+            if viewModel.isLoadingWords && !visible.isEmpty {
+                ProgressView().controlSize(.small)
+            }
+        }
+        .font(.footnote)
+        .foregroundStyle(AppColor.textSecondary)
+        .padding(.horizontal, 4)
+
         if visible.isEmpty {
-            Text("Không có từ nào ở mục “\(viewModel.filter.title)”.")
-                .font(.subheadline)
-                .foregroundStyle(AppColor.textSecondary)
-                .frame(maxWidth: .infinity, minHeight: 120)
+            emptyWords
         } else {
-            // LazyVStack: danh sách đủ 150 từ vẫn cuộn mượt.
             LazyVStack(spacing: 0) {
                 ForEach(Array(visible.enumerated()), id: \.element.id) { offset, entry in
                     if offset > 0 { GroupedDivider(leadingInset: 14) }
@@ -230,22 +233,64 @@ struct VocabularyListView: View {
                         VocabWordRow(entry: entry) { viewModel.play(entry.word) }
                     }
                     .buttonStyle(.plain)
+                    .task { await viewModel.loadMoreIfNeeded(after: entry) }
                 }
+                loadMoreFooter
             }
             .padding(.vertical, 4)
             .outlinedSurface()
+            .opacity(viewModel.isLoadingWords ? 0.5 : 1)
+        }
+    }
+
+    @ViewBuilder
+    private var loadMoreFooter: some View {
+        if viewModel.isLoadingMore {
+            ProgressView()
+                .frame(maxWidth: .infinity, minHeight: 52)
+        } else if viewModel.loadMoreFailed {
+            Button("Không tải thêm được · Thử lại") {
+                Task { await viewModel.retryLoadMore() }
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(AppColor.brand)
+            .frame(maxWidth: .infinity, minHeight: 52)
+        }
+    }
+
+    @ViewBuilder
+    private var emptyWords: some View {
+        if viewModel.isLoadingWords {
+            ProgressView().frame(maxWidth: .infinity, minHeight: 160)
+        } else if let message = viewModel.errorMessage {
+            VStack(spacing: 10) {
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .multilineTextAlignment(.center)
+                Button("Thử lại") { Task { await viewModel.retry() } }
+                    .buttonStyle(SelectableChipStyle(isSelected: false, height: 40))
+            }
+            .frame(maxWidth: .infinity, minHeight: 160)
+        } else {
+            Text(viewModel.filter == .all
+                 ? "Cấp này chưa có từ vựng."
+                 : "Không có từ nào ở mục “\(viewModel.filter.title)”.")
+                .font(.subheadline)
+                .foregroundStyle(AppColor.textSecondary)
+                .frame(maxWidth: .infinity, minHeight: 120)
         }
     }
 
     @ViewBuilder
     private var placeholder: some View {
-        if let message = viewModel.errorMessage {
+        if let message = viewModel.errorMessage, !viewModel.isLoadingLevels {
             ContentUnavailableView {
                 Label("Không tải được từ vựng", systemImage: "wifi.exclamationmark")
             } description: {
                 Text(message)
             } actions: {
-                Button("Thử lại") { Task { await viewModel.load() } }
+                Button("Thử lại") { Task { await viewModel.retry() } }
                     .buttonStyle(.borderedProminent)
             }
             .padding(.top, 40)
@@ -257,7 +302,7 @@ struct VocabularyListView: View {
     // MARK: Actions
 
     private func refresh() {
-        Task { await viewModel.refresh() }
+        Task { await viewModel.refreshAfterLearning() }
     }
 
     private func startPendingQuiz() {
@@ -271,7 +316,7 @@ struct VocabularyListView: View {
         let action = afterQuiz
         afterQuiz = nil
         switch action {
-        case .review(let ids): flashcardSource = .words(ids)
+        case .review(let words): flashcardSource = .words(words)
         case .newQuiz: isShowingQuizSetup = true
         case nil: break
         }
@@ -286,10 +331,14 @@ struct VocabProgressBar: View {
         GeometryReader { proxy in
             let total = max(summary.total, 1)
             HStack(spacing: 2) {
-                Capsule().fill(VocabStatus.known.color)
-                    .frame(width: proxy.size.width * CGFloat(summary.known) / CGFloat(total))
-                Capsule().fill(VocabStatus.learning.color)
-                    .frame(width: proxy.size.width * CGFloat(summary.learning) / CGFloat(total))
+                if summary.known > 0 {
+                    Capsule().fill(VocabStatus.known.color)
+                        .frame(width: proxy.size.width * CGFloat(summary.known) / CGFloat(total))
+                }
+                if summary.learning > 0 {
+                    Capsule().fill(VocabStatus.learning.color)
+                        .frame(width: proxy.size.width * CGFloat(summary.learning) / CGFloat(total))
+                }
                 Spacer(minLength: 0)
             }
         }

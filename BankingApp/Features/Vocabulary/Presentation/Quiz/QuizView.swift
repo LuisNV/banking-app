@@ -6,12 +6,12 @@ struct QuizView: View {
     @State private var isConfirmingExit = false
     @Environment(\.dismiss) private var dismiss
 
-    let onReviewWrongWords: ([String]) -> Void
+    let onReviewWrongWords: ([VocabWord]) -> Void
     let onNewQuiz: () -> Void
 
     init(
         viewModel: QuizViewModel,
-        onReviewWrongWords: @escaping ([String]) -> Void,
+        onReviewWrongWords: @escaping ([VocabWord]) -> Void,
         onNewQuiz: @escaping () -> Void
     ) {
         _viewModel = State(initialValue: viewModel)
@@ -37,8 +37,8 @@ struct QuizView: View {
                         viewModel: viewModel,
                         submission: submission,
                         onClose: { dismiss() },
-                        onReviewWrongWords: { ids in
-                            onReviewWrongWords(ids)
+                        onReviewWrongWords: { words in
+                            onReviewWrongWords(words)
                             dismiss()
                         },
                         onNewQuiz: {
@@ -376,7 +376,7 @@ private struct QuizResultScreen: View {
     let viewModel: QuizViewModel
     let submission: QuizSubmission
     let onClose: () -> Void
-    let onReviewWrongWords: ([String]) -> Void
+    let onReviewWrongWords: ([VocabWord]) -> Void
     let onNewQuiz: () -> Void
 
     private var percent: Int { submission.total == 0 ? 0 : submission.correct * 100 / submission.total }
@@ -430,7 +430,7 @@ private struct QuizResultScreen: View {
                         .buttonStyle(PrimaryButtonStyle(isPill: true))
                 } else {
                     Button {
-                        onReviewWrongWords(wrong.map(\.word.id).uniqued())
+                        onReviewWrongWords(wrong.map(\.word).uniqued())
                     } label: {
                         Label("Ôn lại \(Set(wrong.map(\.word.id)).count) từ sai", systemImage: "rectangle.on.rectangle")
                     }
@@ -512,6 +512,7 @@ private struct QuizResultScreen: View {
 
     private func wrongList(_ wrong: [QuizViewModel.WrongAnswer]) -> some View {
         let entries = wrong.map(\.word).uniqued().map { word in
+            // Trạng thái thật được nạp lại khi mở chi tiết (nếu bản API chưa trả trạng thái mới).
             VocabEntry(word: word, status: submission.statuses[word.id] ?? .learning)
         }
         return VStack(alignment: .leading, spacing: 8) {
@@ -555,10 +556,12 @@ private struct QuizResultScreen: View {
                     .buttonStyle(.plain)
                 }
             }
-            Text("Các từ làm sai đã chuyển về “Đang học” để được nhắc ôn sớm.")
-                .font(.footnote)
-                .foregroundStyle(AppColor.textSecondary)
-                .padding(.horizontal, 4)
+            if !submission.statuses.isEmpty {
+                Text("Các từ làm sai đã chuyển về “Đang học” để được nhắc ôn sớm.")
+                    .font(.footnote)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .padding(.horizontal, 4)
+            }
         }
         .padding(.top, 20)
     }

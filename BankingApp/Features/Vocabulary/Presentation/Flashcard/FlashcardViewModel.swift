@@ -29,6 +29,7 @@ final class FlashcardViewModel {
         self.pronunciation = pronunciation
     }
 
+    var savesProgress: Bool { repository.canUpdateProgress }
     var current: VocabWord? { index < cards.count ? cards[index] : nil }
     var isFinished: Bool { !cards.isEmpty && index >= cards.count }
     var isEmpty: Bool { !isLoading && cards.isEmpty && errorMessage == nil }
@@ -44,9 +45,9 @@ final class FlashcardViewModel {
         do {
             switch source {
             case .level(let level):
-                cards = try await repository.flashcards(level: level, limit: Self.deckSize, wordIDs: nil)
-            case .words(let ids):
-                cards = try await repository.flashcards(level: 1, limit: ids.count, wordIDs: ids)
+                cards = try await repository.flashcards(level: level, limit: Self.deckSize)
+            case .words(let words):
+                cards = words
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -58,7 +59,7 @@ final class FlashcardViewModel {
 
     func play() {
         guard let current else { return }
-        pronunciation.speak(current.hanzi)
+        pronunciation.play(url: current.audioURL, fallbackText: current.hanzi, slow: false)
     }
 
     /// Ghi kết quả rồi sang thẻ tiếp (giao diện đổi ngay, lưu chạy nền).

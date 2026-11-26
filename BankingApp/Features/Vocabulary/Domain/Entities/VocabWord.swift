@@ -1,21 +1,28 @@
 import Foundation
 
 /// Một từ vựng HSK (dữ liệu tĩnh, giống nhau với mọi người dùng).
+/// Từ lấy từ danh sách chỉ có thông tin cơ bản; các trường chi tiết có sau khi gọi API chi tiết (`hasDetail`).
 struct VocabWord: Identifiable, Hashable, Sendable {
     let id: String
     let level: Int
-    let topic: String
+    /// Số thứ tự trong giáo trình, dùng để gọi API chi tiết.
+    var entryNumber: Int = 0
+    var topic: String?
     let hanzi: String
     let pinyin: String
     let meaning: String
-    let partOfSpeech: String
-    /// Âm Hán Việt của cả từ, ví dụ "Nhĩ hảo".
-    let hanViet: String
-    /// Giải thích ngắn theo nghĩa Hán Việt, ví dụ "ngươi tốt → lời chào".
-    let hanVietNote: String?
-    let characters: [HanVietCharacter]
-    let examples: [VocabExample]
-    let audioURL: URL?
+    /// Từ loại: "Danh từ", "Động từ", "Cụm từ"…
+    var partOfSpeech: String?
+    /// Âm Hán Việt của cả từ, ví dụ "nhĩ hảo".
+    var hanViet: String?
+    /// Giải thích theo nghĩa Hán Việt.
+    var hanVietNote: String?
+    /// Ghi chú cách dùng.
+    var usageNote: String?
+    var characters: [HanVietCharacter] = []
+    var examples: [VocabExample] = []
+    var audioURL: URL?
+    var hasDetail = true
 }
 
 struct HanVietCharacter: Hashable, Sendable {
@@ -32,16 +39,16 @@ struct VocabExample: Hashable, Sendable {
 }
 
 /// Trạng thái học của một từ với người dùng hiện tại.
-/// `notStarted` không lưu trên server: từ nào chưa có tiến độ thì là chưa học.
+/// Server không lưu `notStarted`: từ nào chưa có dòng tiến độ thì là chưa học.
 enum VocabStatus: String, CaseIterable, Hashable, Sendable {
-    case notStarted = "NEW"
+    case notStarted = "NOT_STARTED"
     case learning = "LEARNING"
-    case known = "KNOWN"
+    case known = "MASTERED"
 }
 
 /// Từ kèm trạng thái của người dùng.
 struct VocabEntry: Identifiable, Hashable, Sendable {
-    let word: VocabWord
+    var word: VocabWord
     var status: VocabStatus
 
     var id: String { word.id }
@@ -56,6 +63,39 @@ struct VocabSummary: Equatable, Sendable {
     var started: Int { known + learning }
 
     static let empty = VocabSummary(total: 0, known: 0, learning: 0)
+}
+
+/// Một cấp HSK kèm tiến độ của người dùng (`GET v1/hsk/levels`).
+struct HSKLevelProgress: Identifiable, Hashable, Sendable {
+    let level: Int
+    /// "Sơ cấp", "Trung cấp", "Cao cấp".
+    let title: String
+    /// `false`: cấp chưa có từ, hiện khoá.
+    let isAvailable: Bool
+    let totalWords: Int
+    let mastered: Int
+    let learning: Int
+
+    var id: Int { level }
+    var summary: VocabSummary { VocabSummary(total: totalWords, known: mastered, learning: learning) }
+
+    static func defaultTitle(for level: Int) -> String {
+        switch level {
+        case ...3: return "Sơ cấp"
+        case 4...6: return "Trung cấp"
+        default: return "Cao cấp"
+        }
+    }
+}
+
+/// Một trang danh sách từ (`GET v1/hsk/levels/{level}/words`).
+struct VocabPage: Equatable, Sendable {
+    let items: [VocabEntry]
+    let page: Int
+    let totalItems: Int
+    let totalPages: Int
+
+    var hasMore: Bool { page + 1 < totalPages }
 }
 
 /// Kết quả một lần lật thẻ.

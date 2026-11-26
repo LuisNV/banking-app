@@ -12,8 +12,7 @@ struct VocabularyDetailView: View {
         ScrollView {
             VStack(spacing: 20) {
                 header
-                hanVietSection
-                examplesSection
+                detailSections
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -22,6 +21,7 @@ struct VocabularyDetailView: View {
             .transition(.opacity)
         }
         .animation(.easeOut(duration: 0.2), value: viewModel.word.id)
+        .task(id: viewModel.word.id) { await viewModel.loadDetailIfNeeded() }
         .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -68,39 +68,67 @@ struct VocabularyDetailView: View {
                 .font(.title3.bold())
                 .multilineTextAlignment(.center)
                 .padding(.top, 8)
-            Text(viewModel.word.partOfSpeech)
-                .font(.subheadline)
-                .foregroundStyle(AppColor.textSecondary)
-                .padding(.top, 2)
+            if let partOfSpeech = viewModel.word.partOfSpeech {
+                Text(partOfSpeech)
+                    .font(.subheadline)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .padding(.top, 2)
+            }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Phần chỉ có sau khi tải chi tiết: Hán Việt, cách dùng, ví dụ.
+    @ViewBuilder
+    private var detailSections: some View {
+        let word = viewModel.word
+        if !word.hasDetail {
+            if let error = viewModel.detailError {
+                VStack(spacing: 10) {
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundStyle(AppColor.textSecondary)
+                        .multilineTextAlignment(.center)
+                    Button("Thử lại") { Task { await viewModel.loadDetailIfNeeded() } }
+                        .buttonStyle(SelectableChipStyle(isSelected: false, height: 40))
+                }
+                .frame(maxWidth: .infinity, minHeight: 120)
+            } else {
+                ProgressView().frame(maxWidth: .infinity, minHeight: 120)
+            }
+        } else {
+            if word.hanViet != nil { hanVietSection }
+            if let usageNote = word.usageNote { usageSection(usageNote) }
+            if !word.examples.isEmpty { examplesSection }
+        }
     }
 
     private var hanVietSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Hán Việt")
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(viewModel.word.hanViet.uppercased())
-                        .font(.headline)
-                        .tracking(0.4)
-                        .foregroundStyle(AppColor.brand)
-                    if let note = viewModel.word.hanVietNote {
-                        Text(note)
-                            .font(.footnote)
-                            .foregroundStyle(AppColor.textSecondary)
-                    }
+                Text((viewModel.word.hanViet ?? "").uppercased())
+                    .font(.headline)
+                    .tracking(0.4)
+                    .foregroundStyle(AppColor.brand)
+                if let note = viewModel.word.hanVietNote {
+                    Text(note)
+                        .font(.subheadline)
+                        .foregroundStyle(AppColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                FlowLayout(spacing: 18) {
-                    ForEach(viewModel.word.characters, id: \.self) { character in
-                        HStack(spacing: 8) {
-                            Text(character.hanzi).font(.hanzi(20, weight: .regular))
-                            Text(character.reading).font(.subheadline.weight(.semibold))
-                            Text(character.meaning)
-                                .font(.subheadline)
-                                .foregroundStyle(AppColor.textSecondary)
+                if !viewModel.word.characters.isEmpty {
+                    FlowLayout(spacing: 18) {
+                        ForEach(viewModel.word.characters, id: \.self) { character in
+                            HStack(spacing: 8) {
+                                Text(character.hanzi).font(.hanzi(20, weight: .regular))
+                                Text(character.reading).font(.subheadline.weight(.semibold))
+                                Text(character.meaning)
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppColor.textSecondary)
+                            }
+                            .accessibilityElement(children: .combine)
                         }
-                        .accessibilityElement(children: .combine)
                     }
                 }
             }
@@ -108,6 +136,19 @@ struct VocabularyDetailView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .outlinedSurface(cornerRadius: 22)
+        }
+    }
+
+    private func usageSection(_ note: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Cách dùng")
+            Text(note)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .outlinedSurface(cornerRadius: 22)
         }
     }
 
@@ -121,10 +162,14 @@ struct VocabularyDetailView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             highlighted(example.hanzi)
                                 .font(.hanzi(20, weight: .regular))
-                            Text(example.pinyin)
-                                .font(.footnote)
-                                .foregroundStyle(AppColor.textSecondary)
-                            Text(example.meaning).font(.subheadline)
+                            if !example.pinyin.isEmpty {
+                                Text(example.pinyin)
+                                    .font(.footnote)
+                                    .foregroundStyle(AppColor.textSecondary)
+                            }
+                            if !example.meaning.isEmpty {
+                                Text(example.meaning).font(.subheadline)
+                            }
                             if let note = example.note {
                                 Text(note)
                                     .font(.footnote)
@@ -151,14 +196,19 @@ struct VocabularyDetailView: View {
             navButton(systemImage: "chevron.left", label: "Từ trước", enabled: viewModel.canGoPrevious) {
                 viewModel.previous()
             }
-            Button {
-                Task { await viewModel.toggleKnown() }
-            } label: {
-                Label(isKnown ? "Học lại từ này" : "Đánh dấu đã thuộc",
-                      systemImage: isKnown ? "arrow.counterclockwise" : "checkmark")
+            if viewModel.canUpdateProgress {
+                Button {
+                    Task { await viewModel.toggleKnown() }
+                } label: {
+                    Label(isKnown ? "Học lại từ này" : "Đánh dấu đã thuộc",
+                          systemImage: isKnown ? "arrow.counterclockwise" : "checkmark")
+                }
+                .buttonStyle(isKnown ? AnyButtonStyle(OutlinedPillButtonStyle()) : AnyButtonStyle(PrimaryButtonStyle(isLoading: viewModel.isUpdating, isPill: true)))
+                .disabled(viewModel.isUpdating)
+            } else {
+                // Chưa có API ghi tiến độ: chỉ còn nút trước/sau, đẩy ra hai bên.
+                Spacer()
             }
-            .buttonStyle(isKnown ? AnyButtonStyle(OutlinedPillButtonStyle()) : AnyButtonStyle(PrimaryButtonStyle(isLoading: viewModel.isUpdating, isPill: true)))
-            .disabled(viewModel.isUpdating)
             navButton(systemImage: "chevron.right", label: "Từ tiếp theo", enabled: viewModel.canGoNext) {
                 viewModel.next()
             }

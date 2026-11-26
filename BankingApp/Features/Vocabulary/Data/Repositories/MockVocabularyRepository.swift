@@ -1,7 +1,7 @@
 import Foundation
 
-/// Dữ liệu giả cho Từ vựng HSK khi chưa có API: giữ tiến độ trong bộ nhớ,
-/// áp dụng đúng quy tắc chuyển trạng thái dự kiến của server.
+/// Dữ liệu giả cho Từ vựng HSK (USE_MOCK_API = YES): giữ tiến độ trong bộ nhớ,
+/// áp dụng quy tắc chuyển trạng thái dự kiến của server (kể cả phần ghi chưa có API).
 actor MockVocabularyRepository: VocabularyRepository {
     private struct Progress {
         var status: VocabStatus
@@ -13,12 +13,12 @@ actor MockVocabularyRepository: VocabularyRepository {
     private static let knownStreak = 3
     private static let intervals: [Double] = [1, 3, 7, 14, 30]
 
-    private let words: [VocabWord]
+    private let allWords: [VocabWord]
     private var progress: [String: Progress]
     private var attempts: [Int: QuizAttemptSummary] = [:]
 
     init(words: [VocabWord] = MockVocabularyData.hsk1) {
-        self.words = words
+        self.allWords = words
         // Một vài từ đã học sẵn để màn danh sách có đủ 3 trạng thái.
         progress = [
             "hsk1-nihao": Progress(status: .known, correctStreak: 3),
@@ -32,31 +32,50 @@ actor MockVocabularyRepository: VocabularyRepository {
         attempts[1] = QuizAttemptSummary(correct: 7, total: 10, finishedAt: Date().addingTimeInterval(-86_400))
     }
 
-    func availableLevels() async -> [Int] { [1] }
+    nonisolated var canUpdateProgress: Bool { true }
 
-    func words(level: Int) async throws -> [VocabEntry] {
+    func levels() async throws -> [HSKLevelProgress] {
         try await latency()
-        return words.filter { $0.level == level }.map { VocabEntry(word: $0, status: status(of: $0.id)) }
-    }
-
-    func summary(level: Int) async throws -> VocabSummary {
-        let levelWords = words.filter { $0.level == level }
-        let statuses = levelWords.map { status(of: $0.id) }
-        return VocabSummary(
-            total: levelWords.count,
-            known: statuses.filter { $0 == .known }.count,
-            learning: statuses.filter { $0 == .learning }.count
-        )
-    }
-
-    func flashcards(level: Int, limit: Int, wordIDs: [String]?) async throws -> [VocabWord] {
-        try await latency()
-        if let wordIDs {
-            return wordIDs.compactMap { id in words.first { $0.id == id } }
+        return (1...9).map { level in
+            let words = allWords.filter { $0.level == level }
+            let statuses = words.map { status(of: $0.id) }
+            return HSKLevelProgress(
+                level: level,
+                title: HSKLevelProgress.defaultTitle(for: level),
+                isAvailable: !words.isEmpty,
+                totalWords: words.count,
+                mastered: statuses.filter { $0 == .known }.count,
+                learning: statuses.filter { $0 == .learning }.count
+            )
         }
+    }
+
+    func words(level: Int, status filter: VocabStatus?, page: Int, size: Int) async throws -> VocabPage {
+        try await latency()
+        let matching = allWords
+            .filter { $0.level == level }
+            .map { VocabEntry(word: $0, status: status(of: $0.id)) }
+            .filter { filter == nil || $0.status == filter }
+        let totalPages = matching.isEmpty ? 0 : (matching.count + size - 1) / size
+        let start = page * size
+        let items = start < matching.count ? Array(matching[start..<min(start + size, matching.count)]) : []
+        return VocabPage(items: items, page: page, totalItems: matching.count, totalPages: totalPages)
+    }
+
+    func word(level: Int, entryNumber: Int) async throws -> VocabEntry {
+        try await latency()
+        guard let word = allWords.first(where: { $0.level == level && $0.entryNumber == entryNumber }) else {
+            throw NetworkError.api(code: 1026, httpStatus: 404, message: "Không tìm thấy từ vựng", traceId: nil)
+        }
+        return VocabEntry(word: word, status: status(of: word.id))
+    }
+
+    func flashcards(level: Int, limit: Int) async throws -> [VocabWord] {
+        try await latency()
         let now = Date()
-        let levelWords = words.filter { $0.level == level }
-        let due = levelWords.filter { progress[$0.id].map { $0.dueAt <= now } ?? false }
+        let levelWords = allWords.filter { $0.level == level }
+        let due = levelWords
+            .filter { progress[$0.id].map { $0.dueAt <= now } ?? false }
             .sorted { (progress[$0.id]?.status == .learning ? 0 : 1) < (progress[$1.id]?.status == .learning ? 0 : 1) }
         let fresh = levelWords.filter { progress[$0.id] == nil }
         var deck: [VocabWord] = []
@@ -105,33 +124,21 @@ actor MockVocabularyRepository: VocabularyRepository {
 
     func createQuiz(_ config: QuizConfig) async throws -> Quiz {
         try await latency()
-        let levelWords = words.filter { $0.level == config.level }
+        let levelWords = allWords.filter { $0.level == config.level }
         let pool: [VocabWord]
         switch config.scope {
         case .all: pool = levelWords
         case .learning: pool = levelWords.filter { status(of: $0.id) == .learning }
         case .known: pool = levelWords.filter { status(of: $0.id) == .known }
         }
-        let types = Array(config.types)
-        guard !pool.isEmpty, !types.isEmpty else { throw VocabularyError.noWordsInScope }
-
-        var picked = pool.shuffled()
-        // Phạm vi ít từ hơn số câu: lặp lại từ (khác dạng câu) cho đủ.
-        while picked.count < config.questionCount { picked += pool.shuffled() }
-        let questions = picked.prefix(config.questionCount).enumerated().map { index, word in
-            makeQuestion(id: "q\(index)", word: word, type: types.randomElement()!, levelWords: levelWords)
-        }
-        return Quiz(id: UUID().uuidString, questions: questions)
+        return try QuizGenerator.make(config, pool: pool, levelWords: levelWords)
     }
 
     func submitQuiz(_ quiz: Quiz, answers: [QuizAnswer]) async throws -> QuizSubmission {
         try await latency()
-        var correct = 0
         var statuses: [String: VocabStatus] = [:]
         for question in quiz.questions {
-            let answer = answers.first { $0.questionID == question.id }
-            let isCorrect = answer?.optionID == question.correctOptionID
-            if isCorrect { correct += 1 }
+            let isCorrect = answers.first { $0.questionID == question.id }?.optionID == question.correctOptionID
             let current = status(of: question.word.id)
             if !isCorrect {
                 statuses[question.word.id] = try await review(wordID: question.word.id, result: .again)
@@ -142,12 +149,10 @@ actor MockVocabularyRepository: VocabularyRepository {
                 statuses[question.word.id] = try await review(wordID: question.word.id, result: .good)
             }
         }
-        let previous = attempts[quiz.questions.first?.word.level ?? 1]
-        attempts[quiz.questions.first?.word.level ?? 1] = QuizAttemptSummary(
-            correct: correct,
-            total: quiz.questions.count,
-            finishedAt: Date()
-        )
+        let level = quiz.questions.first?.word.level ?? 1
+        let previous = attempts[level]
+        let correct = QuizGenerator.correctCount(quiz, answers: answers)
+        attempts[level] = QuizAttemptSummary(correct: correct, total: quiz.questions.count, finishedAt: Date())
         return QuizSubmission(
             correct: correct,
             total: quiz.questions.count,
@@ -160,28 +165,6 @@ actor MockVocabularyRepository: VocabularyRepository {
 
     private func status(of wordID: String) -> VocabStatus {
         progress[wordID]?.status ?? .notStarted
-    }
-
-    private func makeQuestion(id: String, word: VocabWord, type: QuizQuestionType, levelWords: [VocabWord]) -> QuizQuestion {
-        // Đáp án nhiễu: ưu tiên cùng chủ đề rồi mới tới cùng cấp, không trùng nội dung với đáp án đúng.
-        let others = levelWords.filter { $0.id != word.id }
-        let sameTopic = others.filter { $0.topic == word.topic }.shuffled()
-        let rest = others.filter { $0.topic != word.topic }.shuffled()
-        var distractors: [VocabWord] = []
-        for candidate in sameTopic + rest where distractors.count < 3 {
-            let text = optionText(candidate, type: type)
-            if text != optionText(word, type: type) && !distractors.contains(where: { optionText($0, type: type) == text }) {
-                distractors.append(candidate)
-            }
-        }
-        let options = ([word] + distractors).shuffled().map {
-            QuizOption(id: "\(id)-\($0.id)", text: optionText($0, type: type))
-        }
-        return QuizQuestion(id: id, type: type, word: word, options: options, correctOptionID: "\(id)-\(word.id)")
-    }
-
-    private func optionText(_ word: VocabWord, type: QuizQuestionType) -> String {
-        type == .hanziToMeaning ? word.meaning : word.hanzi
     }
 
     private func latency() async throws {

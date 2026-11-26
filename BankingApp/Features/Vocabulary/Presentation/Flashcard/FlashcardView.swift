@@ -173,7 +173,9 @@ struct FlashcardView: View {
             Text("Xong lượt học!").font(.title.bold())
             Text("Đã nhớ \(viewModel.goodCount) · Chưa nhớ \(viewModel.againCount)")
                 .foregroundStyle(AppColor.textSecondary)
-            Text("Từ chưa nhớ sẽ được nhắc ôn lại sớm.")
+            Text(viewModel.savesProgress
+                 ? "Từ chưa nhớ sẽ được nhắc ôn lại sớm."
+                 : "Kết quả lượt này chưa được lưu lên tài khoản.")
                 .font(.footnote)
                 .foregroundStyle(AppColor.textSecondary)
             Spacer()
@@ -238,7 +240,7 @@ private struct FlashcardFace: View {
                 .shadow(color: .black.opacity(0.08), radius: 17, y: 10)
             VStack {
                 HStack {
-                    Text(word.topic)
+                    Text(word.topic ?? "HSK \(word.level)")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(AppColor.textSecondary)
                         .padding(.horizontal, 10)
@@ -280,9 +282,11 @@ private struct FlashcardFace: View {
                 Text(word.meaning)
                     .font(.title.bold())
                     .multilineTextAlignment(.center)
-                Text(word.partOfSpeech)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.8))
+                if let partOfSpeech = word.partOfSpeech {
+                    Text(partOfSpeech)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
                 if let example = word.examples.first {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(example.hanzi).font(.hanzi(18, weight: .regular))

@@ -110,11 +110,11 @@ final class QuizViewModel {
 
     func playWord(slow: Bool = false) {
         guard let question else { return }
-        pronunciation.speak(question.word.hanzi, slow: slow)
+        pronunciation.play(url: question.word.audioURL, fallbackText: question.word.hanzi, slow: slow)
     }
 
     func play(_ word: VocabWord) {
-        pronunciation.speak(word.hanzi)
+        pronunciation.play(url: word.audioURL, fallbackText: word.hanzi, slow: false)
     }
 
     private func submit() async {
