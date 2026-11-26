@@ -153,21 +153,30 @@ struct VocabularyListView: View {
                 } label: {
                     Label("Học thẻ ghi nhớ", systemImage: "rectangle.on.rectangle")
                         .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .padding(.horizontal, 10)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 46)
                         .background(Capsule().fill(AppColor.brand))
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .layoutPriority(1)
 
                 Button {
                     isShowingQuizSetup = true
                 } label: {
                     Label("Kiểm tra", systemImage: "checkmark")
                         .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .foregroundStyle(AppColor.brand)
-                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .padding(.horizontal, 10)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 46)
                         .outlinedSurface(Capsule(), borderColor: AppColor.fieldBorder)
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
             }
