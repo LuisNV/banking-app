@@ -103,3 +103,31 @@ enum ReviewResult: String, Sendable {
     case good = "REMEMBERED"
     case again = "FORGOT"
 }
+
+// MARK: - Thẻ ghi nhớ
+
+/// Lý do thẻ có trong lượt: đến hạn ôn hay từ mới.
+enum FlashcardReason: String, Sendable {
+    case due = "DUE"
+    case new = "NEW"
+}
+
+struct Flashcard: Identifiable, Hashable, Sendable {
+    let word: VocabWord
+    var status: VocabStatus = .notStarted
+    /// `nil`: thẻ không đến từ API bộ thẻ (vd. ôn lại từ làm sai).
+    var reason: FlashcardReason?
+
+    var id: String { word.id }
+}
+
+/// Một lượt học thẻ (`GET v1/hsk/levels/{level}/flashcards`).
+struct FlashcardDeck: Equatable, Sendable {
+    let cards: [Flashcard]
+    /// Tổng số từ đang đến hạn của cả cấp (có thể nhiều hơn số thẻ trong lượt).
+    let dueCount: Int
+    /// Tổng số từ chưa học còn lại.
+    let newCount: Int
+    /// Lần đến hạn sớm nhất sắp tới, để báo "quay lại lúc …" khi hết thẻ.
+    let nextDueAt: Date?
+}

@@ -3,7 +3,8 @@ import Foundation
 /// Từ vựng HSK và tiến độ học của người dùng đang đăng nhập.
 ///
 /// API: `GET v1/hsk/levels`, `GET v1/hsk/levels/{level}/words`,
-/// `GET v1/hsk/levels/{level}/words/{entryNumber}`, `POST v1/hsk/reviews` (kết quả lật thẻ),
+/// `GET v1/hsk/levels/{level}/words/{entryNumber}`, `GET v1/hsk/levels/{level}/flashcards`,
+/// `POST v1/hsk/reviews` (kết quả lật thẻ),
 /// `PUT v1/hsk/levels/{level}/words/{entryNumber}/progress` (tự đánh dấu).
 /// Server chưa có API kiểm tra: đề được tạo và chấm trên máy, kết quả gửi lên như các lần lật thẻ.
 protocol VocabularyRepository: Sendable {
@@ -16,8 +17,8 @@ protocol VocabularyRepository: Sendable {
 
     /// Có ghi được tiến độ không (ẩn nút "Đánh dấu đã thuộc" nếu không).
     var canUpdateProgress: Bool { get }
-    /// Bộ thẻ cho một lượt học: từ đang học trước, rồi tới từ mới.
-    func flashcards(level: Int, limit: Int) async throws -> [VocabWord]
+    /// Bộ thẻ cho một lượt học: từ đến hạn ôn (quá hạn lâu nhất trước), còn chỗ thì bù từ mới.
+    func flashcards(level: Int, limit: Int) async throws -> FlashcardDeck
     /// Ghi kết quả lật thẻ, trả trạng thái mới của từ.
     func review(_ word: VocabWord, result: ReviewResult) async throws -> VocabStatus
     /// Tự đánh dấu (Đã thuộc / Đang học / Chưa học), trả trạng thái mới.

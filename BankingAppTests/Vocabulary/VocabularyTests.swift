@@ -304,6 +304,37 @@ final class HSKVocabularyDataTests: XCTestCase {
         XCTAssertEqual(put.method, .put)
     }
 
+    func test_decode_flashcardDeck_dueAndNew() throws {
+        let deck = try decode("""
+        {"code":0,"httpStatus":200,"message":"Thành công","traceId":"t","data":{"level":1,"items":[
+          {"entryNumber":4,"hanzi":"爸爸","pinyin":"bàba","meaningVi":"bố","audioUrl":"/audio/hsk/3.0-2025/1/4.m4a",
+           "status":"MASTERED","reason":"DUE","hanViet":"ba ba","wordType":"Danh từ",
+           "example":{"sentenceZh":"我爱爸爸，也爱妈妈。","pinyin":"Wǒ ài bàba, yě ài māma.","translationVi":"Tôi yêu cả bố lẫn mẹ.","note":null}},
+          {"entryNumber":2,"hanzi":"吧","pinyin":"ba","meaningVi":"nhé, nào","audioUrl":null,
+           "status":"NOT_STARTED","reason":"NEW","hanViet":null,"wordType":null,"example":null}],
+          "dueCount":2,"newCount":297,"nextDueAt":"2026-11-27T12:00:00Z"}}
+        """, as: HSKFlashcardDeckDTO.self).toDomain(audioBaseURL: URL(string: "http://localhost:8081/")!)
+
+        XCTAssertEqual(deck.cards.map(\.reason), [.due, .new])
+        XCTAssertEqual(deck.cards[0].status, .known)
+        XCTAssertEqual(deck.cards[0].word.hanViet, "ba ba")
+        XCTAssertEqual(deck.cards[0].word.examples.first?.meaning, "Tôi yêu cả bố lẫn mẹ.")
+        XCTAssertEqual(deck.cards[0].word.entryNumber, 4)
+        XCTAssertTrue(deck.cards[1].word.examples.isEmpty)
+        XCTAssertNil(deck.cards[1].word.partOfSpeech)
+        XCTAssertEqual(deck.dueCount, 2)
+        XCTAssertEqual(deck.newCount, 297)
+        XCTAssertEqual(deck.nextDueAt, ISO8601DateFormatter().date(from: "2026-11-27T12:00:00Z"))
+        XCTAssertEqual(HSKVocabularyEndpoint.flashcards(level: 1, size: 20).path, "v1/hsk/levels/1/flashcards")
+        XCTAssertEqual(HSKVocabularyEndpoint.flashcards(level: 1, size: 20).queryItems, ["size": "20"])
+    }
+
+    func test_dateParsing_withFractionalSeconds() {
+        XCTAssertNotNil(HSKVocabularyMapping.date("2026-11-27T12:00:00.123Z"))
+        XCTAssertNotNil(HSKVocabularyMapping.date("2026-11-27T12:00:00Z"))
+        XCTAssertNil(HSKVocabularyMapping.date(nil))
+    }
+
     func test_decode_progressResponse_notStarted() throws {
         let response = try decode("""
         {"code":0,"httpStatus":200,"message":"Thành công","traceId":"t","data":{
@@ -343,6 +374,10 @@ private actor StubHSKRemote: HSKVocabularyRemoteDataSource {
         throw NetworkError.api(code: 1026, httpStatus: 404, message: "Không tìm thấy từ vựng", traceId: nil)
     }
 
+    func flashcards(level: Int, size: Int) async throws -> HSKFlashcardDeckDTO {
+        HSKFlashcardDeckDTO(level: level, items: [], dueCount: 0, newCount: 0, nextDueAt: nil)
+    }
+
     func reviews(_ body: HSKReviewRequestDTO) async throws -> HSKReviewResponseDTO {
         reviewBodies.append(body)
         let items = body.items.map {
@@ -360,5 +395,25 @@ private actor StubHSKRemote: HSKVocabularyRemoteDataSource {
             word: HSKWordProgressDTO(level: level, entryNumber: entryNumber, status: body.status, correctStreak: 3, dueAt: nil, lastReviewedAt: nil),
             level: nil
         )
+    }
+}
+
+final class MockFlashcardDeckTests: XCTestCase {
+    func test_newUser_getsNewWordsOnly_inCurriculumOrder() async throws {
+        let repository = MockVocabularyRepository(words: Array(MockVocabularyData.hsk1.suffix(5)))
+        let deck = try await repository.flashcards(level: 1, limit: 3)
+        XCTAssertEqual(deck.cards.count, 3)
+        XCTAssertTrue(deck.cards.allSatisfy { $0.reason == .new })
+        XCTAssertEqual(deck.cards.map(\.word.entryNumber), deck.cards.map(\.word.entryNumber).sorted())
+    }
+
+    func test_dueWordsComeFirst() async throws {
+        let repository = MockVocabularyRepository()
+        let deck = try await repository.flashcards(level: 1, limit: 20)
+        // Các từ học sẵn trong mock đều đến hạn ngay → đứng trước từ mới.
+        let firstNew = deck.cards.firstIndex { $0.reason == .new } ?? deck.cards.count
+        XCTAssertTrue(deck.cards[..<firstNew].allSatisfy { $0.reason == .due })
+        XCTAssertTrue(deck.cards[firstNew...].allSatisfy { $0.reason == .new })
+        XCTAssertGreaterThan(deck.dueCount, 0)
     }
 }

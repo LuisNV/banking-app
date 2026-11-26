@@ -39,15 +39,9 @@ actor VocabularyRepositoryImpl: VocabularyRepository {
         try await remote.word(level: level, entryNumber: entryNumber).toDomain(audioBaseURL: audioBaseURL)
     }
 
-    func flashcards(level: Int, limit: Int) async throws -> [VocabWord] {
-        // Đang học trước, thiếu thì thêm từ mới theo thứ tự giáo trình.
-        let learning = try await words(level: level, status: .learning, page: 0, size: limit).items
-        var deck = learning.map(\.word)
-        if deck.count < limit {
-            let fresh = try await words(level: level, status: .notStarted, page: 0, size: limit - deck.count).items
-            deck += fresh.map(\.word)
-        }
-        return deck
+    func flashcards(level: Int, limit: Int) async throws -> FlashcardDeck {
+        // Server cho 1–50 thẻ một lượt.
+        try await remote.flashcards(level: level, size: min(max(limit, 1), 50)).toDomain(audioBaseURL: audioBaseURL)
     }
 
     func review(_ word: VocabWord, result: ReviewResult) async throws -> VocabStatus {

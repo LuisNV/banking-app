@@ -16,9 +16,9 @@ struct FlashcardView: View {
             topBar
             if viewModel.isFinished {
                 finished
-            } else if let word = viewModel.current {
+            } else if let card = viewModel.currentCard {
                 counters.padding(.top, 10)
-                deck(word)
+                deck(card)
                     .padding(.horizontal, 24)
                     .padding(.top, 22)
                 Text("Vuốt trái: chưa nhớ · Vuốt phải: đã nhớ")
@@ -33,7 +33,7 @@ struct FlashcardView: View {
                 ContentUnavailableView(
                     "Chưa có thẻ cần học",
                     systemImage: "checkmark.seal",
-                    description: Text("Bạn đã ôn hết các từ đến hạn. Quay lại sau nhé!")
+                    description: Text(viewModel.emptyMessage)
                 )
             } else {
                 ProgressView().frame(maxHeight: .infinity)
@@ -74,7 +74,7 @@ struct FlashcardView: View {
         .font(.footnote.weight(.semibold))
     }
 
-    private func deck(_ word: VocabWord) -> some View {
+    private func deck(_ card: Flashcard) -> some View {
         ZStack {
             // Các thẻ phía sau (tối đa 2) cho cảm giác xấp thẻ.
             ForEach((0..<min(viewModel.remainingBehind, 2)).reversed(), id: \.self) { depth in
@@ -88,8 +88,8 @@ struct FlashcardView: View {
                     .offset(y: CGFloat(depth + 1) * 13)
             }
 
-            FlashcardFace(word: word, isFlipped: viewModel.isFlipped)
-                .id(word.id)
+            FlashcardFace(card: card, isFlipped: viewModel.isFlipped)
+                .id(card.id)
                 .transition(.asymmetric(insertion: .opacity, removal: .opacity))
                 .offset(dragOffset)
                 .rotationEffect(.degrees(Double(dragOffset.width) / 25))
@@ -213,8 +213,10 @@ struct FlashcardView: View {
 
 /// Thẻ hai mặt: trước nền trắng chỉ có chữ Hán; sau nền xanh có pinyin, nghĩa, ví dụ.
 private struct FlashcardFace: View {
-    let word: VocabWord
+    let card: Flashcard
     let isFlipped: Bool
+
+    private var word: VocabWord { card.word }
 
     var body: some View {
         ZStack {
@@ -240,12 +242,7 @@ private struct FlashcardFace: View {
                 .shadow(color: .black.opacity(0.08), radius: 17, y: 10)
             VStack {
                 HStack {
-                    Text(word.topic ?? "HSK \(word.level)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AppColor.textSecondary)
-                        .padding(.horizontal, 10)
-                        .frame(height: 24)
-                        .overlay(Capsule().strokeBorder(AppColor.fieldBorder, lineWidth: 1))
+                    reasonChip
                     Spacer()
                 }
                 Spacer()
@@ -261,7 +258,34 @@ private struct FlashcardFace: View {
             .padding(20)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Mặt trước: \(word.hanzi)")
+        .accessibilityLabel("Mặt trước: \(word.hanzi)\(card.reason == .due ? ", ôn tập" : card.reason == .new ? ", từ mới" : "")")
+    }
+
+    /// "Ôn tập" (cam) / "Từ mới" (xanh); thẻ ôn lại từ sai thì ghi cấp HSK.
+    @ViewBuilder
+    private var reasonChip: some View {
+        switch card.reason {
+        case .due:
+            chip("Ôn tập", foreground: Color(hex: 0x9A3A00), background: Color(hex: 0xFFF1E3))
+        case .new:
+            chip("Từ mới", foreground: AppColor.brandDark, background: AppColor.brandTint)
+        case nil:
+            Text(word.topic ?? "HSK \(word.level)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AppColor.textSecondary)
+                .padding(.horizontal, 10)
+                .frame(height: 24)
+                .overlay(Capsule().strokeBorder(AppColor.fieldBorder, lineWidth: 1))
+        }
+    }
+
+    private func chip(_ title: String, foreground: Color, background: Color) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(foreground)
+            .padding(.horizontal, 10)
+            .frame(height: 24)
+            .background(Capsule().fill(background))
     }
 
     private var back: some View {
@@ -275,6 +299,11 @@ private struct FlashcardFace: View {
                 Text(word.pinyin)
                     .font(.title2.weight(.medium))
                     .foregroundStyle(.white.opacity(0.9))
+                if let hanViet = word.hanViet {
+                    Text("Hán Việt: \(hanViet)")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.75))
+                }
                 Rectangle()
                     .fill(.white.opacity(0.35))
                     .frame(width: 48, height: 1.5)

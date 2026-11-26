@@ -8,7 +8,11 @@ final class FlashcardViewModel {
     let source: FlashcardSource
     static let deckSize = 20
 
-    private(set) var cards: [VocabWord] = []
+    private(set) var cards: [Flashcard] = []
+    /// Lần đến hạn sớm nhất sắp tới (khi lượt rỗng: "quay lại lúc …").
+    private(set) var nextDueAt: Date?
+    /// Tổng số từ đến hạn của cả cấp lúc bắt đầu lượt.
+    private(set) var dueCount = 0
     private(set) var index = 0
     private(set) var goodCount = 0
     private(set) var againCount = 0
@@ -30,7 +34,22 @@ final class FlashcardViewModel {
     }
 
     var savesProgress: Bool { repository.canUpdateProgress }
-    var current: VocabWord? { index < cards.count ? cards[index] : nil }
+    /// Lượt rỗng: báo khi nào có từ đến hạn ôn tiếp (giờ địa phương).
+    var emptyMessage: String {
+        guard let nextDueAt else { return "Bạn đã học hết các từ của cấp này." }
+        let calendar = Calendar.current
+        let time = nextDueAt.formatted(date: .omitted, time: .shortened)
+        if calendar.isDateInToday(nextDueAt) {
+            return "Bạn đã ôn xong. Quay lại lúc \(time) hôm nay nhé!"
+        }
+        if calendar.isDateInTomorrow(nextDueAt) {
+            return "Bạn đã ôn xong. Quay lại lúc \(time) ngày mai nhé!"
+        }
+        return "Bạn đã ôn xong. Quay lại vào \(nextDueAt.formatted(date: .abbreviated, time: .shortened)) nhé!"
+    }
+
+    var currentCard: Flashcard? { index < cards.count ? cards[index] : nil }
+    var current: VocabWord? { currentCard?.word }
     var isFinished: Bool { !cards.isEmpty && index >= cards.count }
     var isEmpty: Bool { !isLoading && cards.isEmpty && errorMessage == nil }
     var progress: Double { cards.isEmpty ? 0 : Double(index) / Double(cards.count) }
@@ -45,9 +64,12 @@ final class FlashcardViewModel {
         do {
             switch source {
             case .level(let level):
-                cards = try await repository.flashcards(level: level, limit: Self.deckSize)
+                let deck = try await repository.flashcards(level: level, limit: Self.deckSize)
+                cards = deck.cards
+                nextDueAt = deck.nextDueAt
+                dueCount = deck.dueCount
             case .words(let words):
-                cards = words
+                cards = words.map { Flashcard(word: $0) }
             }
         } catch {
             errorMessage = error.localizedDescription

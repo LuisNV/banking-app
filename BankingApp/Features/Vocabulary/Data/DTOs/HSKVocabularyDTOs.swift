@@ -182,3 +182,70 @@ struct HSKWordProgressDTO: Decodable, Equatable {
     var wordID: String { HSKVocabularyMapping.wordID(level: level, entryNumber: entryNumber) }
     var domainStatus: VocabStatus { HSKVocabularyMapping.status(status) }
 }
+
+// MARK: - Thẻ ghi nhớ
+
+struct HSKFlashcardDeckDTO: Decodable, Equatable {
+    let level: Int
+    let items: [HSKFlashcardItemDTO]
+    let dueCount: Int?
+    let newCount: Int?
+    let nextDueAt: String?
+
+    func toDomain(audioBaseURL: URL) -> FlashcardDeck {
+        FlashcardDeck(
+            cards: items.map { $0.toDomain(level: level, audioBaseURL: audioBaseURL) },
+            dueCount: dueCount ?? 0,
+            newCount: newCount ?? 0,
+            nextDueAt: HSKVocabularyMapping.date(nextDueAt)
+        )
+    }
+}
+
+struct HSKFlashcardItemDTO: Decodable, Equatable {
+    let entryNumber: Int
+    let hanzi: String
+    let pinyin: String
+    let meaningVi: String
+    let audioUrl: String?
+    let status: String?
+    let reason: String?
+    let hanViet: String?
+    let wordType: String?
+    let example: HSKExampleDTO?
+
+    func toDomain(level: Int, audioBaseURL: URL) -> Flashcard {
+        Flashcard(
+            word: VocabWord(
+                id: HSKVocabularyMapping.wordID(level: level, entryNumber: entryNumber),
+                level: level,
+                entryNumber: entryNumber,
+                hanzi: hanzi,
+                pinyin: pinyin,
+                meaning: meaningVi,
+                partOfSpeech: wordType.nonEmpty,
+                hanViet: hanViet.nonEmpty,
+                examples: example.map {
+                    [VocabExample(hanzi: $0.sentenceZh, pinyin: $0.pinyin ?? "", meaning: $0.translationVi ?? "", note: $0.note.nonEmpty)]
+                } ?? [],
+                audioURL: HSKVocabularyMapping.audioURL(audioUrl, base: audioBaseURL),
+                // Thẻ chỉ có ví dụ đầu tiên, chưa có cách dùng: mở chi tiết sẽ tải đủ.
+                hasDetail: false
+            ),
+            status: HSKVocabularyMapping.status(status),
+            reason: reason.flatMap(FlashcardReason.init(rawValue:))
+        )
+    }
+}
+
+extension HSKVocabularyMapping {
+    /// ISO-8601 UTC, có hoặc không có phần giây lẻ.
+    static func date(_ raw: String?) -> Date? {
+        guard let raw, !raw.isEmpty else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: raw) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: raw)
+    }
+}

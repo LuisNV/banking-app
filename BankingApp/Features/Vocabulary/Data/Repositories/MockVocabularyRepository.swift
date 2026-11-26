@@ -70,19 +70,18 @@ actor MockVocabularyRepository: VocabularyRepository {
         return VocabEntry(word: word, status: status(of: word.id))
     }
 
-    func flashcards(level: Int, limit: Int) async throws -> [VocabWord] {
+    func flashcards(level: Int, limit: Int) async throws -> FlashcardDeck {
         try await latency()
         let now = Date()
         let levelWords = allWords.filter { $0.level == level }
         let due = levelWords
             .filter { progress[$0.id].map { $0.dueAt <= now } ?? false }
-            .sorted { (progress[$0.id]?.status == .learning ? 0 : 1) < (progress[$1.id]?.status == .learning ? 0 : 1) }
+            .sorted { (progress[$0.id]?.dueAt ?? now) < (progress[$1.id]?.dueAt ?? now) }
         let fresh = levelWords.filter { progress[$0.id] == nil }
-        var deck: [VocabWord] = []
-        for word in due + fresh where deck.count < limit && !deck.contains(word) {
-            deck.append(word)
-        }
-        return deck
+        let cards = due.prefix(limit).map { Flashcard(word: $0, status: status(of: $0.id), reason: .due) }
+            + fresh.prefix(max(limit - min(due.count, limit), 0)).map { Flashcard(word: $0, status: .notStarted, reason: .new) }
+        let nextDueAt = progress.values.map(\.dueAt).filter { $0 > now }.min()
+        return FlashcardDeck(cards: cards, dueCount: due.count, newCount: fresh.count, nextDueAt: nextDueAt)
     }
 
     func review(_ word: VocabWord, result: ReviewResult) async throws -> VocabStatus {
