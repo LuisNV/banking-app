@@ -64,21 +64,24 @@ private struct AvatarPickerModifier: ViewModifier {
                     }
                 )
             }
-            .alert("Chưa có quyền dùng camera", isPresented: $isShowingCameraDenied) {
-                Button("Để sau", role: .cancel) {}
-                Button("Mở Cài đặt") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-            } message: {
-                Text("Vào Cài đặt › TingTing và bật Camera để chụp ảnh đại diện.")
+            .appPopup(isPresented: $isShowingCameraDenied) {
+                AppPopup(
+                    style: .permission(systemImage: "camera"),
+                    title: "Chưa có quyền dùng camera",
+                    message: "Vào Cài đặt › TingTing và bật Camera để chụp ảnh đại diện.",
+                    primary: .init(title: "Mở Cài đặt") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    },
+                    secondary: .init(title: "Để sau")
+                )
             }
-            .alert("Không đọc được ảnh", isPresented: $isShowingLoadError) {
-                Button("Đóng", role: .cancel) {}
-            } message: {
-                Text(ProfileError.invalidImage.errorDescription ?? "")
-            }
+            .errorPopup(
+                "Không đọc được ảnh",
+                isPresented: $isShowingLoadError,
+                message: ProfileError.invalidImage.errorDescription
+            )
     }
 
     /// Chạy sau khi bottom sheet đóng hẳn, để không mở hai màn chồng lúc đang chuyển cảnh.

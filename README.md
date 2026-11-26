@@ -101,6 +101,15 @@ Ngoài ra dùng sẵn của Apple: Observation (`@Observable`), async/await, Loc
 - **Màn "Mở app"** (`App/SplashView.swift`): nối tiếp Launch Screen với cùng ảnh, cùng vị trí, hiện khoảng 0,9 giây kèm tên app, vòng xoay và phiên bản rồi mờ dần.
 - **Lớp phủ đang xử lý** (`DesignSystem/Components/LoadingOverlay.swift`): nền tối mờ, icon app với vòng xoay bao quanh, không có chữ (`message` chỉ cho VoiceOver).
 
+## Báo lỗi (popup & toast)
+
+`DesignSystem/Components/AppPopup.swift`, `AppPopupCenter.swift`. Popup và toast hiện trong một cửa sổ riêng nằm trên cùng (trên cả thanh tab, sheet, màn toàn màn hình); popup đến cùng lúc thì xếp hàng.
+
+- `.errorPopup(title, isPresented:, message:, retry:)`: thay cho `.alert` khi báo lỗi. Câu lỗi về mạng tự dùng kiểu "Mất kết nối" (có "Thử lại" nếu truyền `retry`), câu về hết phiên dùng kiểu ổ khoá, còn lại kiểu lỗi chung với nút "Đã hiểu".
+- `.appPopup(isPresented:) { AppPopup(...) }`: popup tuỳ biến (xác nhận đăng xuất, xin quyền camera…).
+- `AppPopupCenter.shared.showToast(AppToast(...))`: lỗi nhẹ không chặn thao tác, trượt xuống ở đầu màn, tự ẩn sau 4 giây, vuốt lên để ẩn.
+- Lỗi gắn với một ô nhập (sai mật khẩu, email trùng) vẫn hiện ngay dưới ô, không dùng popup.
+
 ## Kiến trúc
 
 ```

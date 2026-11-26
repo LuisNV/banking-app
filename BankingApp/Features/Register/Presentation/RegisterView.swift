@@ -41,15 +41,11 @@ struct RegisterView: View {
                 LoadingOverlay(message: "Đang tải phiên đăng ký…")
             }
         }
-        .alert(
+        .errorPopup(
             viewModel.errorTitle,
             isPresented: $viewModel.isShowingError,
-            presenting: viewModel.errorMessage
-        ) { _ in
-            Button("Đóng", role: .cancel) {}
-        } message: { message in
-            Text(message)
-        }
+            message: viewModel.errorMessage
+        )
     }
 
     private var stepTransition: AnyTransition {

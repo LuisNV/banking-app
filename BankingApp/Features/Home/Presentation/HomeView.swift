@@ -23,20 +23,26 @@ struct HomeView: View {
             FloatingTabBar(selection: $viewModel.selectedTab)
         }
         .task { await viewModel.loadProfile() }
+        // Lỗi tải không chặn thao tác: báo bằng toast, có "Thử lại".
+        .onChange(of: viewModel.profileErrorMessage) { _, message in
+            guard let message else { return }
+            AppPopupCenter.shared.showToast(AppToast(
+                title: "Không tải được thông tin tài khoản",
+                message: message,
+                actionTitle: "Thử lại",
+                action: { [viewModel] in Task { await viewModel.loadProfile(force: true) } }
+            ))
+        }
         .task { await viewModel.learningSettings.load() }
         .overlay {
             if viewModel.isLoggingOut {
                 LoadingOverlay(message: "Đang đăng xuất...")
             }
         }
-        .alert(
+        .errorPopup(
             "Không thể cập nhật ảnh",
             isPresented: $viewModel.isShowingError,
-            presenting: viewModel.errorMessage
-        ) { _ in
-            Button("Đóng", role: .cancel) {}
-        } message: { message in
-            Text(message)
-        }
+            message: viewModel.errorMessage
+        )
     }
 }

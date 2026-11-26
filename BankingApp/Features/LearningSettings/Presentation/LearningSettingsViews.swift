@@ -53,15 +53,12 @@ private struct SettingsScaffold<Content: View>: View {
                 .padding(.vertical, 8)
                 .background(AppColor.background)
             }
-            .alert(
+            .errorPopup(
                 "Không thể lưu",
                 isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }),
-                presenting: errorMessage
-            ) { _ in
-                Button("Đóng", role: .cancel) {}
-            } message: { message in
-                Text(message)
-            }
+                message: errorMessage,
+                retry: { Task { await save() } }
+            )
         }
         .interactiveDismissDisabled(isSaving)
     }

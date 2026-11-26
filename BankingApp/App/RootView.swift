@@ -65,14 +65,8 @@ struct RootView: View {
         ) { _ in
             router.handleSessionExpired()
         }
-        .alert(
-            "Phiên đăng nhập hết hạn",
-            isPresented: $router.isShowingSessionExpired,
-            presenting: router.sessionExpiredMessage
-        ) { _ in
-            Button("Đăng nhập lại", role: .cancel) {}
-        } message: { message in
-            Text(message)
+        .appPopup(isPresented: $router.isShowingSessionExpired) { [router] in
+            .sessionExpired(message: router.sessionExpiredMessage)
         }
     }
 }

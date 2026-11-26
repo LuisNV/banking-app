@@ -36,15 +36,11 @@ struct ForgotPasswordView: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden()
             .toolbar { toolbar }
-            .alert(
+            .errorPopup(
                 "Không thể đặt lại mật khẩu",
                 isPresented: $viewModel.isShowingAlert,
-                presenting: viewModel.alertMessage
-            ) { _ in
-                Button("Đóng", role: .cancel) {}
-            } message: { message in
-                Text(message)
-            }
+                message: viewModel.alertMessage
+            )
         }
         .interactiveDismissDisabled(viewModel.isLoading || viewModel.step == .done)
         .onAppear { viewModel.prefill(identifier) }

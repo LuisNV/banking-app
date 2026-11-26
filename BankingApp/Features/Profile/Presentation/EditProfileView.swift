@@ -50,15 +50,12 @@ struct EditProfileView: View {
         .sheet(isPresented: $viewModel.isShowingPasswordSheet) {
             PasswordConfirmSheet(viewModel: viewModel)
         }
-        .alert(
+        .errorPopup(
             "Không thể lưu",
             isPresented: $viewModel.isShowingAlert,
-            presenting: viewModel.alertMessage
-        ) { _ in
-            Button("Đóng", role: .cancel) {}
-        } message: { message in
-            Text(message)
-        }
+            message: viewModel.alertMessage,
+            retry: { Task { await viewModel.save() } }
+        )
         .onChange(of: viewModel.didSave) { _, saved in
             if saved { dismiss() }
         }

@@ -33,15 +33,11 @@ struct ChangePasswordView: View {
             .navigationTitle("Đổi mật khẩu")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
-            .alert(
+            .errorPopup(
                 "Không thể đổi mật khẩu",
                 isPresented: $viewModel.isShowingAlert,
-                presenting: viewModel.alertMessage
-            ) { _ in
-                Button("Đóng", role: .cancel) {}
-            } message: { message in
-                Text(message)
-            }
+                message: viewModel.alertMessage
+            )
         }
         .interactiveDismissDisabled(viewModel.isLoading)
         .fullScreenCover(isPresented: $isShowingForgotPassword) {

@@ -33,15 +33,12 @@ struct LoginView: View {
         .onChange(of: viewModel.isDrawerOpen) { _, isOpen in
             if isOpen { focusedField = nil }
         }
-        .alert(
+        .errorPopup(
             "Không thể đăng nhập",
             isPresented: $viewModel.isShowingError,
-            presenting: viewModel.errorMessage
-        ) { _ in
-            Button("Đóng", role: .cancel) {}
-        } message: { message in
-            Text(message)
-        }
+            message: viewModel.errorMessage,
+            retry: { Task { await viewModel.login() } }
+        )
         .sheet(item: $utilitiesViewModel.selectedItem) { item in
             UtilityDetailPlaceholderView(item: item)
                 .presentationDetents([.medium])

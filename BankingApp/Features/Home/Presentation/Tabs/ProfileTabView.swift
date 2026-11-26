@@ -83,13 +83,16 @@ struct ProfileTabView: View {
             }
             // Dùng alert (không dùng confirmationDialog): từ iOS 26 confirmationDialog hiện dạng
             // bong bóng và ẩn nút Huỷ, còn alert luôn là hộp thoại giữa màn hình có đủ hai nút.
-            .alert("Đăng xuất", isPresented: $isConfirmingLogout) {
-                Button("Huỷ", role: .cancel) {}
-                Button("Đăng xuất", role: .destructive) {
-                    Task { await viewModel.logout() }
-                }
-            } message: {
-                Text("Bạn có chắc muốn đăng xuất khỏi TingTing?")
+            .appPopup(isPresented: $isConfirmingLogout) { [viewModel] in
+                AppPopup(
+                    style: .confirm,
+                    title: "Đăng xuất",
+                    message: "Bạn có chắc muốn đăng xuất khỏi TingTing?",
+                    primary: .init(title: "Đăng xuất", isDestructive: true) {
+                        Task { await viewModel.logout() }
+                    },
+                    secondary: .init(title: "Huỷ")
+                )
             }
         }
     }
