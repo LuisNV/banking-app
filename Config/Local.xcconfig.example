@@ -1,0 +1,3 @@
+// Chép thành Config/Local.xcconfig rồi sửa địa chỉ. File Local.xcconfig không được commit.
+// Không cần chạy lại xcodegen: chỉ cần build lại app (⌘R).
+API_BASE_URL = https:/$()/ten-tunnel.trycloudflare.com/api

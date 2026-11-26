@@ -1,0 +1,7 @@
+// Cấu hình bản Debug. Trong xcconfig, "//" là chú thích nên URL phải viết "http:/$()/…".
+// Muốn đổi địa chỉ backend trên máy mình mà không sửa file này: tạo Config/Local.xcconfig
+// (đã bỏ qua trong git), hoặc chạy scripts/tunnel.sh để tự tạo.
+API_BASE_URL = http:/$()/localhost:8081/api
+USE_MOCK_API = NO
+
+#include? "Local.xcconfig"

@@ -7,6 +7,13 @@ options:
   createIntermediateGroups: true
   developmentLanguage: vi
 
+# API_BASE_URL / USE_MOCK_API nằm trong Config/*.xcconfig. Địa chỉ riêng của máy bạn (vd. tunnel)
+# đặt trong Config/Local.xcconfig (không commit) — chỉ cần build lại, không cần xcodegen.
+# Muốn dùng dữ liệu giả: chọn scheme "BankingApp (Mock)" trong Xcode.
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+
 settings:
   base:
     SWIFT_VERSION: "5.10"
@@ -14,15 +21,6 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     TARGETED_DEVICE_FAMILY: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
-  configs:
-    # Đổi API_BASE_URL thành địa chỉ backend của bạn, rồi chạy lại `xcodegen generate`.
-    # Muốn dùng dữ liệu giả: chọn scheme "BankingApp (Mock)" trong Xcode, không cần sửa ở đây.
-    Debug:
-      API_BASE_URL: "http://localhost:8081/api"
-      USE_MOCK_API: "NO"
-    Release:
-      API_BASE_URL: "http://localhost:8081/api"
-      USE_MOCK_API: "NO"
 
 packages:
   Alamofire:

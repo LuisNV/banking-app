@@ -1,0 +1,5 @@
+// Cấu hình bản Release (Archive, TestFlight). Bản Release luôn gọi API thật.
+API_BASE_URL = http:/$()/localhost:8081/api
+USE_MOCK_API = NO
+
+#include? "Local.xcconfig"

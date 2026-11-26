@@ -12,3 +12,6 @@ build/
 .build/
 BankingApp/Resources/Info.plist
 .DS_Store
+
+# Địa chỉ backend riêng của từng máy (scripts/tunnel.sh tạo)
+Config/Local.xcconfig
