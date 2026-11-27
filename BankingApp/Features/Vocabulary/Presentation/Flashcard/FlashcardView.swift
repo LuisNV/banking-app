@@ -293,18 +293,31 @@ private struct FlashcardFace: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(AppColor.brand)
                 .shadow(color: AppColor.brand.opacity(0.3), radius: 17, y: 10)
-            VStack(spacing: 4) {
-                Spacer(minLength: 0)
-                Text(word.hanzi).font(.hanzi(56))
-                Text(word.pinyin)
-                    .font(.title2.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.9))
-                if let hanViet = word.hanViet {
-                    Text("Hán Việt: \(hanViet)")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.75))
-                }
-                // Chiết tự gọn: "爱 = 爫 + 冖 + 友", tối đa 2 chữ cho vừa thẻ.
+            // Thẻ có chiều cao cố định: thử bản đầy đủ trước, không vừa thì bỏ câu ví dụ,
+            // cuối cùng mới dùng chiết tự dạng gọn ("爱 = 爫 + 冖 + 友").
+            ViewThatFits(in: .vertical) {
+                backContent(showsExample: true, fullDecomposition: true)
+                backContent(showsExample: false, fullDecomposition: true)
+                backContent(showsExample: false, fullDecomposition: false)
+            }
+            .foregroundStyle(.white)
+            .padding(20)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func backContent(showsExample: Bool, fullDecomposition: Bool) -> some View {
+        VStack(spacing: 4) {
+            Text(word.hanzi).font(.hanzi(52))
+            Text(word.pinyin)
+                .font(.title2.weight(.medium))
+                .foregroundStyle(.white.opacity(0.9))
+            if let hanViet = word.hanViet {
+                Text("Hán Việt: \(hanViet)")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+            if !fullDecomposition {
                 ForEach(Array(word.decomposition.prefix(2).enumerated()), id: \.offset) { _, item in
                     Text("\(item.character) = \(item.compactFormula ?? "")")
                         .font(.footnote)
@@ -312,37 +325,111 @@ private struct FlashcardFace: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
                 }
-                Rectangle()
-                    .fill(.white.opacity(0.35))
-                    .frame(width: 48, height: 1.5)
-                    .padding(.vertical, 12)
-                Text(word.meaning)
-                    .font(.title.bold())
-                    .multilineTextAlignment(.center)
-                if let partOfSpeech = word.partOfSpeech {
-                    Text(partOfSpeech)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.8))
-                }
-                if let example = word.examples.first {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(example.hanzi).font(.hanzi(18, weight: .regular))
+            }
+            Rectangle()
+                .fill(.white.opacity(0.35))
+                .frame(width: 48, height: 1.5)
+                .padding(.vertical, 10)
+            Text(word.meaning)
+                .font(.title2.bold())
+                .multilineTextAlignment(.center)
+            if let partOfSpeech = word.partOfSpeech {
+                Text(partOfSpeech)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            if fullDecomposition, !word.decomposition.isEmpty {
+                FlashcardDecompositionBox(items: Array(word.decomposition.prefix(2)))
+                    .padding(.top, 14)
+            }
+            if showsExample, let example = word.examples.first {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(example.hanzi).font(.hanzi(18, weight: .regular))
+                    if !example.pinyin.isEmpty {
                         Text(example.pinyin)
                             .font(.footnote)
                             .foregroundStyle(.white.opacity(0.75))
-                        Text(example.meaning).font(.subheadline)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.14)))
-                    .padding(.top, 18)
+                    Text(example.meaning).font(.subheadline)
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.14)))
+                .padding(.top, fullDecomposition && !word.decomposition.isEmpty ? 8 : 14)
             }
-            .foregroundStyle(.white)
-            .padding(20)
         }
-        .accessibilityElement(children: .combine)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+/// Chiết tự trên mặt sau thẻ (nền xanh): mỗi chữ một dòng gồm chữ + âm Hán Việt,
+/// thẻ bộ phận nối bằng "+", câu gợi nhớ.
+private struct FlashcardDecompositionBox: View {
+    let items: [CharacterDecomposition]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("CHIẾT TỰ")
+                .font(.caption2.weight(.bold))
+                .tracking(0.4)
+                .foregroundStyle(.white.opacity(0.7))
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(spacing: 0) {
+                        Text(item.character).font(.hanzi(24))
+                        if let hanViet = item.hanViet {
+                            Text(hanViet)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                    }
+                    .frame(minWidth: 32)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if item.components.isEmpty {
+                            Text(item.formula ?? item.note ?? "")
+                                .font(.footnote)
+                        } else {
+                            FlowLayout(spacing: 4) {
+                                ForEach(Array(item.components.enumerated()), id: \.offset) { offset, component in
+                                    if offset > 0 {
+                                        Text("+")
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundStyle(.white.opacity(0.6))
+                                            .frame(height: 26)
+                                    }
+                                    HStack(spacing: 4) {
+                                        Text(component.character).font(.hanzi(14, weight: .regular))
+                                        if let hanViet = component.hanViet {
+                                            Text(hanViet).font(.caption.weight(.semibold))
+                                        }
+                                        if let meaning = component.meaning {
+                                            Text(meaning)
+                                                .font(.caption)
+                                                .foregroundStyle(.white.opacity(0.75))
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .frame(height: 26)
+                                    .background(Capsule().fill(.white.opacity(0.18)))
+                                }
+                            }
+                        }
+                        if let mnemonic = item.mnemonic {
+                            Text(mnemonic)
+                                .font(.footnote)
+                                .foregroundStyle(.white.opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.14)))
+    }
+}
+
