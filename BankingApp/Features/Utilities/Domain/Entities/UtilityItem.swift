@@ -5,7 +5,6 @@ enum UtilityKind: String, CaseIterable {
     case dictionary
     case pinyinChart
     case tonePractice
-    case handwriting
     case radicals
     case hskVocabulary
 }

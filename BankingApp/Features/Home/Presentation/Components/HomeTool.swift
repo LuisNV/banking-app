@@ -26,8 +26,6 @@ struct HomeTool: Identifiable, Hashable {
                  glyph: .text("ā"), tint: Color(.systemOrange)),
         HomeTool(kind: .tonePractice, shortTitle: "Thanh điệu", fullTitle: "Luyện thanh điệu",
                  glyph: .symbol("waveform"), tint: Color(.systemPink)),
-        HomeTool(kind: .handwriting, shortTitle: "Tập viết chữ", fullTitle: "Tập viết chữ Hán",
-                 glyph: .symbol("pencil"), tint: Color(.systemGreen)),
         HomeTool(kind: .radicals, shortTitle: "Bộ thủ", fullTitle: "Bộ thủ",
                  glyph: .text("氵"), tint: Color(.systemIndigo)),
         HomeTool(kind: .hskVocabulary, shortTitle: "Từ vựng HSK", fullTitle: "Từ vựng HSK",
