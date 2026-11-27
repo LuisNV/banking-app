@@ -54,6 +54,10 @@ struct HomeDashboardView: View {
                     VocabularyListView()
                 case .pinyinChart:
                     PinyinChartView()
+                case .tonePractice:
+                    TonesView()
+                case .radicals:
+                    RadicalsView()
                 default:
                     UtilityDetailPlaceholderView(item: tool.utilityItem)
                         .navigationTitle(tool.fullTitle)
