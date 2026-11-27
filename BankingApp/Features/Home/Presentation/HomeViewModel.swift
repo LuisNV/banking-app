@@ -13,6 +13,8 @@ final class HomeViewModel {
     var selectedTab: Tab = .home
     /// Ẩn thanh tab nổi khi tab đang mở một màn con.
     var isTabBarHidden = false
+    /// Từ của ngày từ API (có chiết tự). `nil` (lỗi/chưa tải) thì dùng từ trong dashboard.
+    private(set) var wordOfTheDay: VocabEntry?
     private(set) var isLoggingOut = false
 
     // MARK: Dashboard
@@ -61,6 +63,7 @@ final class HomeViewModel {
     private let getDashboardUseCase: GetHomeDashboardUseCaseProtocol
     private let getMyProfileUseCase: GetMyProfileUseCaseProtocol
     private let pronunciation: PronunciationServiceProtocol
+    private let loadWordOfTheDay: () async throws -> VocabEntry
     private let prepareImage: (Data) -> Data?
     private let onLoggedOut: () -> Void
 
@@ -71,6 +74,7 @@ final class HomeViewModel {
         getDashboardUseCase: GetHomeDashboardUseCaseProtocol = Container.shared.getHomeDashboardUseCase(),
         getMyProfileUseCase: GetMyProfileUseCaseProtocol = Container.shared.getMyProfileUseCase(),
         pronunciation: PronunciationServiceProtocol = Container.shared.pronunciationService(),
+        loadWordOfTheDay: (() async throws -> VocabEntry)? = nil,
         prepareImage: @escaping (Data) -> Data? = AvatarImageProcessor.jpegData(from:),
         today: Date = Date(),
         learningSettings: LearningSettingsStore? = nil,
@@ -83,6 +87,7 @@ final class HomeViewModel {
         self.getDashboardUseCase = getDashboardUseCase
         self.getMyProfileUseCase = getMyProfileUseCase
         self.pronunciation = pronunciation
+        self.loadWordOfTheDay = loadWordOfTheDay ?? { try await Container.shared.vocabularyRepository().wordOfTheDay() }
         self.prepareImage = prepareImage
         self.today = today
         self.onLoggedOut = onLoggedOut
@@ -126,7 +131,10 @@ final class HomeViewModel {
         guard dashboard == nil, !isLoadingDashboard else { return }
         isLoadingDashboard = true
         defer { isLoadingDashboard = false }
-        dashboard = try? await getDashboardUseCase.execute()
+        async let dashboardResult = try? getDashboardUseCase.execute()
+        async let wordResult = try? loadWordOfTheDay()
+        dashboard = await dashboardResult
+        wordOfTheDay = await wordResult
     }
 
     /// Tải thông tin tài khoản. Mặc định chỉ tải một lần; `force` để tải lại (kéo để làm mới).
@@ -158,8 +166,11 @@ final class HomeViewModel {
     }
 
     func playWordOfTheDay() {
-        guard let word = dashboard?.wordOfTheDay else { return }
-        pronunciation.speak(word.hanzi)
+        if let word = wordOfTheDay?.word {
+            pronunciation.play(url: word.audioURL, fallbackText: word.hanzi, slow: false)
+        } else if let word = dashboard?.wordOfTheDay {
+            pronunciation.speak(word.hanzi)
+        }
     }
 
     func logout() async {

@@ -224,7 +224,7 @@ struct DecompositionRow: View {
 }
 
 /// Thẻ một bộ phận: chữ trong ô tròn nhỏ, tên Hán Việt đậm, nghĩa xám.
-private struct ComponentChip: View {
+struct ComponentChip: View {
     let component: DecompositionComponent
 
     var body: some View {
@@ -255,5 +255,57 @@ private extension String {
     var capitalizedFirstLetter: String {
         guard let first else { return self }
         return first.uppercased() + dropFirst()
+    }
+}
+
+/// Chiết tự gọn cho thẻ nền trắng (vd. Từ của ngày): chữ + âm Hán Việt, thẻ bộ phận, câu gợi nhớ.
+struct CompactDecompositionView: View {
+    let items: [CharacterDecomposition]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("CHIẾT TỰ")
+                .font(.caption2.weight(.bold))
+                .tracking(0.4)
+                .foregroundStyle(AppColor.textSecondary)
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(spacing: 0) {
+                        Text(item.character).font(.hanzi(22))
+                        if let hanViet = item.hanViet {
+                            Text(hanViet)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(AppColor.brand)
+                        }
+                    }
+                    .frame(minWidth: 30)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if item.components.isEmpty {
+                            Text(item.formula ?? item.note ?? "").font(.footnote)
+                        } else {
+                            FlowLayout(spacing: 4) {
+                                ForEach(Array(item.components.enumerated()), id: \.offset) { offset, component in
+                                    if offset > 0 {
+                                        Text("+")
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundStyle(AppColor.textTertiary)
+                                            .frame(height: 32)
+                                    }
+                                    ComponentChip(component: component)
+                                }
+                            }
+                        }
+                        if let mnemonic = item.mnemonic {
+                            Text(mnemonic)
+                                .font(.footnote)
+                                .foregroundStyle(AppColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
     }
 }

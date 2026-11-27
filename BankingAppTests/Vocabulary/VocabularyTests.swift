@@ -378,6 +378,10 @@ private actor StubHSKRemote: HSKVocabularyRemoteDataSource {
         HSKFlashcardDeckDTO(level: level, items: [], dueCount: 0, newCount: 0, nextDueAt: nil)
     }
 
+    func wordOfTheDay() async throws -> HSKWordOfTheDayDTO {
+        throw NetworkError.server(statusCode: 500)
+    }
+
     func reviews(_ body: HSKReviewRequestDTO) async throws -> HSKReviewResponseDTO {
         reviewBodies.append(body)
         let items = body.items.map {
@@ -524,5 +528,35 @@ final class StructuredDecompositionTests: XCTestCase {
 
         let good = CharacterDecomposition(character: "好", mnemonic: "Mẹ bế con → điều tốt, hay.")
         XCTAssertEqual(good.mnemonicHighlights, ["điều tốt", "hay"])
+    }
+}
+
+final class WordOfTheDayDataTests: XCTestCase {
+    func test_decode_wordOfTheDay_withDecomposition_andMissingFields() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let json = """
+        {"code":0,"httpStatus":200,"message":"OK","traceId":"t","data":{
+          "entryNumber":180,"level":1,"hanzi":"牛","pinyin":"niú","meaningVi":"bò","audioUrl":"/audio/hsk/3.0-2025/1/180.m4a",
+          "decomposition":[{"character":"牛","hanViet":"ngưu","layoutVi":"Nhận diện theo bộ",
+            "components":[{"character":"牛","hanViet":"ngưu","meaningVi":"con bò"}],
+            "mnemonicVi":"Hai sừng nhô ra từ đầu con bò.","componentsVi":"牛 (con bò)",
+            "noteVi":"Nhận diện theo bộ · 牛 (con bò). Hai sừng nhô ra từ đầu con bò."}]}}
+        """
+        let entry = try XCTUnwrap(decoder.decode(APIResponse<HSKWordOfTheDayDTO>.self, from: Data(json.utf8)).data)
+            .toDomain(audioBaseURL: URL(string: "http://localhost:8081/")!)
+
+        XCTAssertEqual(entry.word.id, "hsk1-180")
+        XCTAssertEqual(entry.status, .notStarted, "Thiếu status → chưa học")
+        XCTAssertFalse(entry.word.hasDetail, "Có entryNumber → mở chi tiết sẽ tải đủ")
+        XCTAssertEqual(entry.word.decomposition.first?.hanViet, "ngưu")
+        XCTAssertEqual(entry.word.decomposition.first?.mnemonic, "Hai sừng nhô ra từ đầu con bò.")
+        XCTAssertEqual(entry.word.audioURL?.absoluteString, "http://localhost:8081/audio/hsk/3.0-2025/1/180.m4a")
+        XCTAssertEqual(HSKVocabularyEndpoint.wordOfTheDay.path, "v1/hsk/word-of-the-day")
+    }
+
+    func test_mockRepository_wordOfTheDay_hasDecomposition() async throws {
+        let entry = try await MockVocabularyRepository().wordOfTheDay()
+        XCTAssertFalse(entry.word.decomposition.isEmpty)
     }
 }

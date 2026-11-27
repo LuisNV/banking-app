@@ -7,6 +7,7 @@ enum HSKVocabularyEndpoint: Endpoint {
     case words(level: Int, status: String?, page: Int, size: Int)
     case word(level: Int, entryNumber: Int)
     case flashcards(level: Int, size: Int)
+    case wordOfTheDay
     case reviews(HSKReviewRequestDTO)
     case progress(level: Int, entryNumber: Int, body: HSKProgressPutDTO)
 
@@ -20,6 +21,8 @@ enum HSKVocabularyEndpoint: Endpoint {
             return "v1/hsk/levels/\(level)/words/\(entryNumber)"
         case .flashcards(let level, _):
             return "v1/hsk/levels/\(level)/flashcards"
+        case .wordOfTheDay:
+            return "v1/hsk/word-of-the-day"
         case .reviews:
             return "v1/hsk/reviews"
         case .progress(let level, let entryNumber, _):
@@ -29,7 +32,7 @@ enum HSKVocabularyEndpoint: Endpoint {
 
     var method: HTTPMethod {
         switch self {
-        case .levels, .words, .word, .flashcards: return .get
+        case .levels, .words, .word, .flashcards, .wordOfTheDay: return .get
         case .reviews: return .post
         case .progress: return .put
         }
@@ -39,7 +42,7 @@ enum HSKVocabularyEndpoint: Endpoint {
         switch self {
         case .reviews(let dto): return dto
         case .progress(_, _, let dto): return dto
-        case .levels, .words, .word, .flashcards: return nil
+        case .levels, .words, .word, .flashcards, .wordOfTheDay: return nil
         }
     }
 
@@ -51,7 +54,7 @@ enum HSKVocabularyEndpoint: Endpoint {
             return items
         case .flashcards(_, let size):
             return ["size": String(size)]
-        case .levels, .word, .reviews, .progress:
+        case .levels, .word, .reviews, .progress, .wordOfTheDay:
             return nil
         }
     }

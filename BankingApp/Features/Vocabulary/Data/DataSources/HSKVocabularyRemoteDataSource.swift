@@ -5,6 +5,7 @@ protocol HSKVocabularyRemoteDataSource: Sendable {
     func words(level: Int, status: String?, page: Int, size: Int) async throws -> HSKWordPageDTO
     func word(level: Int, entryNumber: Int) async throws -> HSKWordDetailDTO
     func flashcards(level: Int, size: Int) async throws -> HSKFlashcardDeckDTO
+    func wordOfTheDay() async throws -> HSKWordOfTheDayDTO
     func reviews(_ body: HSKReviewRequestDTO) async throws -> HSKReviewResponseDTO
     func putProgress(level: Int, entryNumber: Int, body: HSKProgressPutDTO) async throws -> HSKProgressResponseDTO
 }
@@ -33,6 +34,10 @@ final class HSKVocabularyRemoteDataSourceImpl: HSKVocabularyRemoteDataSource, @u
 
     func flashcards(level: Int, size: Int) async throws -> HSKFlashcardDeckDTO {
         try await client.request(HSKVocabularyEndpoint.flashcards(level: level, size: size), as: HSKFlashcardDeckDTO.self)
+    }
+
+    func wordOfTheDay() async throws -> HSKWordOfTheDayDTO {
+        try await client.request(HSKVocabularyEndpoint.wordOfTheDay, as: HSKWordOfTheDayDTO.self)
     }
 
     func reviews(_ body: HSKReviewRequestDTO) async throws -> HSKReviewResponseDTO {

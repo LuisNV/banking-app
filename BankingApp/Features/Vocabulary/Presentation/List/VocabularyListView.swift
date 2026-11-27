@@ -56,12 +56,7 @@ struct VocabularyListView: View {
         }
         .navigationTitle("Từ vựng HSK")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(for: VocabularyRoute.self) { route in
-            switch route {
-            case .detail(let entries, let index):
-                VocabularyDetailView(viewModel: VocabularyDetailViewModel(entries: entries, index: index))
-            }
-        }
+        // Đích `VocabularyRoute` khai báo ở gốc NavigationStack của Trang chủ.
         .task { await viewModel.load() }
         .onAppear { refresh() }
         .sheet(isPresented: $isShowingQuizSetup, onDismiss: startPendingQuiz) {

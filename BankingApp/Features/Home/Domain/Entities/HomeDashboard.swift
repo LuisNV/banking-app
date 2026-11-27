@@ -56,3 +56,16 @@ struct WordOfTheDay: Equatable {
     /// Vd. "HSK 1".
     let level: String
 }
+
+extension WordOfTheDay {
+    /// Từ API Từ của ngày (module Từ vựng).
+    init(_ word: VocabWord) {
+        self.init(
+            hanzi: word.hanzi,
+            pinyin: word.pinyin,
+            meaning: word.meaning,
+            detail: word.partOfSpeech ?? "",
+            level: "HSK \(word.level)"
+        )
+    }
+}

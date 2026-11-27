@@ -22,7 +22,17 @@ struct HomeDashboardView: View {
                                 viewModel.selectedTab = .lessons
                             }
                         }
-                        if let word = dashboard.wordOfTheDay {
+                        if let entry = viewModel.wordOfTheDay {
+                            // Chạm thẻ để mở chi tiết từ (Hán Việt, cách dùng, ví dụ).
+                            NavigationLink(value: VocabularyRoute.detail(entries: [entry], index: 0)) {
+                                WordOfTheDayCard(
+                                    word: WordOfTheDay(entry.word),
+                                    decomposition: entry.word.decomposition
+                                ) { viewModel.playWordOfTheDay() }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        } else if let word = dashboard.wordOfTheDay {
                             WordOfTheDayCard(word: word) { viewModel.playWordOfTheDay() }
                         }
                     } else if viewModel.isLoadingDashboard {
@@ -44,6 +54,12 @@ struct HomeDashboardView: View {
                     UtilityDetailPlaceholderView(item: tool.utilityItem)
                         .navigationTitle(tool.fullTitle)
                         .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+            .navigationDestination(for: VocabularyRoute.self) { route in
+                switch route {
+                case .detail(let entries, let index):
+                    VocabularyDetailView(viewModel: VocabularyDetailViewModel(entries: entries, index: index))
                 }
             }
             .navigationDestination(for: String.self) { route in

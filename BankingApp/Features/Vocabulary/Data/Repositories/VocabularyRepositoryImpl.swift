@@ -39,6 +39,10 @@ actor VocabularyRepositoryImpl: VocabularyRepository {
         try await remote.word(level: level, entryNumber: entryNumber).toDomain(audioBaseURL: audioBaseURL)
     }
 
+    func wordOfTheDay() async throws -> VocabEntry {
+        try await remote.wordOfTheDay().toDomain(audioBaseURL: audioBaseURL)
+    }
+
     func flashcards(level: Int, limit: Int) async throws -> FlashcardDeck {
         // Server cho 1–50 thẻ một lượt.
         try await remote.flashcards(level: level, size: min(max(limit, 1), 50)).toDomain(audioBaseURL: audioBaseURL)

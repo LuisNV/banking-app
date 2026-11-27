@@ -70,6 +70,17 @@ actor MockVocabularyRepository: VocabularyRepository {
         return VocabEntry(word: word, status: status(of: word.id))
     }
 
+    func wordOfTheDay() async throws -> VocabEntry {
+        try await latency()
+        // Đổi theo ngày trong năm để mỗi ngày một từ.
+        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+        let withDecomposition = allWords.filter { !$0.decomposition.isEmpty }
+        let pool = withDecomposition.isEmpty ? allWords : withDecomposition
+        guard !pool.isEmpty else { throw VocabularyError.noWordsInScope }
+        let word = pool[day % pool.count]
+        return VocabEntry(word: word, status: status(of: word.id))
+    }
+
     func flashcards(level: Int, limit: Int) async throws -> FlashcardDeck {
         try await latency()
         let now = Date()

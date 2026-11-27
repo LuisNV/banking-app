@@ -295,3 +295,51 @@ extension HSKVocabularyMapping {
         return formatter.date(from: raw)
     }
 }
+
+// MARK: - Từ của ngày
+
+/// `GET v1/hsk/word-of-the-day`. Giải mã "dễ tính": ngoài chữ Hán, trường nào thiếu cũng không lỗi.
+struct HSKWordOfTheDayDTO: Decodable, Equatable {
+    let entryNumber: Int?
+    let level: Int?
+    let hanzi: String
+    let pinyin: String?
+    let meaningVi: String?
+    let audioUrl: String?
+    let status: String?
+    let hanViet: String?
+    let hanVietNote: String?
+    let wordType: String?
+    let usageNote: String?
+    let example: HSKExampleDTO?
+    let examples: [HSKExampleDTO]?
+    let decomposition: [HSKDecompositionDTO]?
+
+    func toDomain(audioBaseURL: URL) -> VocabEntry {
+        let level = level ?? 1
+        let entryNumber = entryNumber ?? 0
+        let allExamples = (examples ?? []) + (example.map { [$0] } ?? [])
+        return VocabEntry(
+            word: VocabWord(
+                id: entryNumber > 0 ? HSKVocabularyMapping.wordID(level: level, entryNumber: entryNumber) : "wotd-\(hanzi)",
+                level: level,
+                entryNumber: entryNumber,
+                hanzi: hanzi,
+                pinyin: pinyin ?? "",
+                meaning: meaningVi ?? "",
+                partOfSpeech: wordType.nonEmpty,
+                hanViet: hanViet.nonEmpty,
+                hanVietNote: hanVietNote.nonEmpty,
+                usageNote: usageNote.nonEmpty,
+                examples: allExamples.map {
+                    VocabExample(hanzi: $0.sentenceZh, pinyin: $0.pinyin ?? "", meaning: $0.translationVi ?? "", note: $0.note.nonEmpty)
+                },
+                decomposition: HSKDecompositionDTO.toDomain(decomposition),
+                audioURL: HSKVocabularyMapping.audioURL(audioUrl, base: audioBaseURL),
+                // Mở chi tiết sẽ tải đủ (nếu biết entryNumber).
+                hasDetail: entryNumber == 0
+            ),
+            status: HSKVocabularyMapping.status(status)
+        )
+    }
+}

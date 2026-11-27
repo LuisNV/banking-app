@@ -44,6 +44,8 @@ final class HomeDashboardTests: XCTestCase {
     private var dashboardUseCase: StubDashboardUseCase!
     private var pronunciation: SpyPronunciation!
     private var myProfile: StubMyProfile!
+    /// Mặc định API Từ của ngày lỗi → dùng từ trong dashboard.
+    private var wordOfTheDayLoader: () async throws -> VocabEntry = { throw URLError(.badServerResponse) }
 
     override func setUp() async throws {
         dashboardUseCase = StubDashboardUseCase(result: .success(try await MockHomeRepository().dashboard()))
@@ -62,6 +64,7 @@ final class HomeDashboardTests: XCTestCase {
             getDashboardUseCase: dashboardUseCase,
             getMyProfileUseCase: myProfile,
             pronunciation: pronunciation,
+            loadWordOfTheDay: wordOfTheDayLoader,
             today: today,
             onLoggedOut: {}
         )
@@ -124,6 +127,25 @@ final class HomeDashboardTests: XCTestCase {
         sut.playWordOfTheDay()
 
         XCTAssertEqual(pronunciation.spoken, ["学习"])
+    }
+
+    func test_wordOfTheDay_fromAPI_takesPriority_andPlaysAudio() async {
+        let word = VocabWord(
+            id: "hsk1-200", level: 1, entryNumber: 200, hanzi: "牛", pinyin: "niú", meaning: "bò",
+            decomposition: [CharacterDecomposition(character: "牛", hanViet: "ngưu",
+                                                   components: [.init(character: "牛", hanViet: "ngưu", meaning: "con bò")],
+                                                   mnemonic: "Hai sừng nhô ra từ đầu con bò.")],
+            audioURL: URL(string: "http://localhost:8081/audio/hsk/1/200.m4a")
+        )
+        wordOfTheDayLoader = { VocabEntry(word: word, status: .notStarted) }
+        let sut = makeSUT()
+
+        await sut.loadDashboard()
+        sut.playWordOfTheDay()
+
+        XCTAssertEqual(sut.wordOfTheDay?.word.hanzi, "牛")
+        XCTAssertEqual(sut.wordOfTheDay?.word.decomposition.first?.components.first?.meaning, "con bò")
+        XCTAssertEqual(pronunciation.spoken, ["牛"])
     }
 
     func test_loadProfile_updatesNameEmailAndAvatar() async {

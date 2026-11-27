@@ -14,6 +14,8 @@ protocol VocabularyRepository: Sendable {
     func words(level: Int, status: VocabStatus?, page: Int, size: Int) async throws -> VocabPage
     /// Chi tiết một từ (Hán Việt, từ loại, cách dùng, ví dụ).
     func word(level: Int, entryNumber: Int) async throws -> VocabEntry
+    /// Từ của ngày (`GET v1/hsk/word-of-the-day`), có sẵn chiết tự.
+    func wordOfTheDay() async throws -> VocabEntry
 
     /// Có ghi được tiến độ không (ẩn nút "Đánh dấu đã thuộc" nếu không).
     var canUpdateProgress: Bool { get }

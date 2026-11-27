@@ -138,6 +138,8 @@ private struct LessonProgressStyle: ProgressViewStyle {
 /// Thẻ "Từ của ngày".
 struct WordOfTheDayCard: View {
     let word: WordOfTheDay
+    /// Chiết tự (từ API Từ của ngày); rỗng thì không hiện.
+    var decomposition: [CharacterDecomposition] = []
     let onPlay: () -> Void
 
     var body: some View {
@@ -192,6 +194,13 @@ struct WordOfTheDayCard: View {
                 .accessibilityLabel("Nghe phát âm \(word.pinyin)")
             }
             .fixedSize(horizontal: false, vertical: true)
+
+            if !decomposition.isEmpty {
+                Rectangle()
+                    .fill(AppColor.rowDivider)
+                    .frame(height: 1)
+                CompactDecompositionView(items: Array(decomposition.prefix(2)))
+            }
         }
         .padding(.leading, 16)
         .padding(.trailing, 14)
