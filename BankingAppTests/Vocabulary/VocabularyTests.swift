@@ -417,3 +417,68 @@ final class MockFlashcardDeckTests: XCTestCase {
         XCTAssertGreaterThan(deck.dueCount, 0)
     }
 }
+
+// MARK: - Chiết tự
+
+final class CharacterDecompositionTests: XCTestCase {
+    func test_parse_layoutFormulaAndMnemonic() {
+        let item = CharacterDecomposition(character: "休", note: "Trái/phải [亻 (người) + 木 (cây)] Gợi nhớ một người tựa vào cây để nghỉ.")
+        XCTAssertEqual(item.layout, "Trái/phải")
+        XCTAssertEqual(item.formula, "亻 (người) + 木 (cây)")
+        XCTAssertEqual(item.mnemonic, "Gợi nhớ một người tựa vào cây để nghỉ.")
+    }
+
+    func test_parse_withoutMnemonic() {
+        let item = CharacterDecomposition(character: "息", note: "Trên/dưới [自 + 心 (tim)]")
+        XCTAssertEqual(item.layout, "Trên/dưới")
+        XCTAssertEqual(item.formula, "自 + 心 (tim)")
+        XCTAssertNil(item.mnemonic)
+    }
+
+    func test_parse_nestedBrackets_keepsInnerGroup() {
+        let item = CharacterDecomposition(character: "爱", note: "Trên/dưới [trên/dưới [爫 + 冖] + 友]")
+        XCTAssertEqual(item.layout, "Trên/dưới")
+        XCTAssertEqual(item.formula, "trên/dưới [爫 + 冖] + 友")
+        XCTAssertNil(item.mnemonic)
+    }
+
+    func test_parse_unexpectedFormat_fallsBackToNote() {
+        let item = CharacterDecomposition(character: "一", note: "Chữ tượng hình, một nét ngang.")
+        XCTAssertNil(item.formula)
+        XCTAssertEqual(item.note, "Chữ tượng hình, một nét ngang.")
+        XCTAssertNil(CharacterDecomposition.parse("Thiếu ngoặc đóng [亻 + 木"))
+    }
+
+    func test_decode_detailAndFlashcard_decomposition() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let detailJSON = """
+        {"code":0,"httpStatus":200,"message":"OK","traceId":"t","data":{
+          "entryNumber":246,"level":1,"hanzi":"休息","pinyin":"xiūxi","meaningVi":"nghỉ ngơi","audioUrl":null,"status":"NOT_STARTED",
+          "hanViet":null,"hanVietNote":null,"wordType":null,"usageNote":null,"examples":[],
+          "decomposition":[{"character":"休","noteVi":"Trái/phải [亻 (người) + 木 (cây)] Gợi nhớ một người tựa vào cây để nghỉ."},
+                           {"character":"息","noteVi":"Trên/dưới [自 + 心 (tim)]"},
+                           {"character":"X","noteVi":null}]}}
+        """
+        let detail = try XCTUnwrap(decoder.decode(APIResponse<HSKWordDetailDTO>.self, from: Data(detailJSON.utf8)).data)
+            .toDomain(audioBaseURL: URL(string: "http://localhost:8081/")!)
+        XCTAssertEqual(detail.word.decomposition.map(\.character), ["休", "息"], "Bỏ chữ không có ghi chú")
+        XCTAssertEqual(detail.word.decomposition[0].formula, "亻 (người) + 木 (cây)")
+
+        let deckJSON = """
+        {"code":0,"httpStatus":200,"message":"OK","traceId":"t","data":{"level":1,"items":[
+          {"entryNumber":1,"hanzi":"爱","pinyin":"ài","meaningVi":"yêu","audioUrl":null,"status":"NOT_STARTED","reason":"NEW",
+           "hanViet":"ái","wordType":"Động từ","example":null,
+           "decomposition":[{"character":"爱","noteVi":"Trên/dưới [trên/dưới [爫 + 冖] + 友]"}]}],
+          "dueCount":0,"newCount":300,"nextDueAt":null}}
+        """
+        let deck = try XCTUnwrap(decoder.decode(APIResponse<HSKFlashcardDeckDTO>.self, from: Data(deckJSON.utf8)).data)
+            .toDomain(audioBaseURL: URL(string: "http://localhost:8081/")!)
+        XCTAssertEqual(deck.cards.first?.word.decomposition.first?.formula, "trên/dưới [爫 + 冖] + 友")
+
+        // Server cũ chưa có field decomposition: vẫn giải mã được.
+        let oldJSON = deckJSON.replacingOccurrences(of: #","decomposition":[{"character":"爱","noteVi":"Trên/dưới [trên/dưới [爫 + 冖] + 友]"}]"#, with: "")
+        let old = try XCTUnwrap(decoder.decode(APIResponse<HSKFlashcardDeckDTO>.self, from: Data(oldJSON.utf8)).data)
+        XCTAssertNil(old.items.first?.decomposition)
+    }
+}

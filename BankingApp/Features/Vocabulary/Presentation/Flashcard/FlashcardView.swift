@@ -304,6 +304,14 @@ private struct FlashcardFace: View {
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.75))
                 }
+                // Chiết tự gọn: "休 = 亻 (người) + 木 (cây)", tối đa 2 chữ cho vừa thẻ.
+                ForEach(Array(word.decomposition.prefix(2).enumerated()), id: \.offset) { _, item in
+                    Text("\(item.character) = \(item.formula ?? item.note)")
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                }
                 Rectangle()
                     .fill(.white.opacity(0.35))
                     .frame(width: 48, height: 1.5)

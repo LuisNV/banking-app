@@ -9,6 +9,7 @@ enum MockVocabularyData {
             hanViet: "Nhĩ hảo", hanVietNote: "“ngươi tốt” → lời chào",
             characters: [.init(hanzi: "你", reading: "Nhĩ", meaning: "bạn, ngươi"), .init(hanzi: "好", reading: "Hảo", meaning: "tốt")],
             examples: [.init(hanzi: "你好，我叫明安。", pinyin: "Nǐ hǎo, wǒ jiào Míng Ān.", meaning: "Xin chào, tôi tên là Minh An.", note: nil), .init(hanzi: "老师，您好！", pinyin: "Lǎoshī, nín hǎo!", meaning: "Em chào thầy/cô ạ!", note: "您 (nín) là cách nói lịch sự của 你")],
+            decomposition: [.init(character: "你", note: "Trái/phải [亻 (người) + 尔 (ngươi)] Người mà mình gọi là ngươi → bạn."), .init(character: "好", note: "Trái/phải [女 (phụ nữ) + 子 (con)] Mẹ bế con → điều tốt, hay.")],
             audioURL: nil
         ),
         VocabWord(
@@ -65,6 +66,7 @@ enum MockVocabularyData {
             hanViet: "Ma ma", hanVietNote: nil,
             characters: [.init(hanzi: "妈", reading: "Ma", meaning: "mẹ")],
             examples: [.init(hanzi: "我妈妈是老师。", pinyin: "Wǒ māma shì lǎoshī.", meaning: "Mẹ tôi là giáo viên.", note: nil)],
+            decomposition: [.init(character: "妈", note: "Trái/phải [女 (phụ nữ) + 马 (ngựa, gợi âm mǎ)] Người phụ nữ, đọc gần như 马 → mẹ.")],
             audioURL: nil
         ),
         VocabWord(
@@ -153,6 +155,7 @@ enum MockVocabularyData {
             hanViet: "Kim thiên", hanVietNote: "“ngày nay”",
             characters: [.init(hanzi: "今", reading: "Kim", meaning: "nay"), .init(hanzi: "天", reading: "Thiên", meaning: "ngày, trời")],
             examples: [.init(hanzi: "今天很热。", pinyin: "Jīntiān hěn rè.", meaning: "Hôm nay rất nóng.", note: nil)],
+            decomposition: [.init(character: "今", note: "Trên/dưới [人 + 一 + 乛]"), .init(character: "天", note: "Trên/dưới [一 + 大 (to lớn)] Thứ ở trên cả cái lớn → trời, ngày.")],
             audioURL: nil
         ),
         VocabWord(

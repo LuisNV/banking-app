@@ -117,3 +117,49 @@ extension Font {
         .system(size: size, weight: weight)
     }
 }
+
+/// Một dòng chiết tự: ô chữ lớn, nhãn bố cục ("Trái/phải"), công thức bộ phận và câu gợi nhớ.
+struct DecompositionRow: View {
+    let item: CharacterDecomposition
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(item.character)
+                .font(.hanzi(32))
+                .frame(width: 52, height: 52)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(AppColor.brandTint))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                if let formula = item.formula {
+                    if let layout = item.layout {
+                        Text(layout)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(AppColor.fieldLabel)
+                            .padding(.horizontal, 8)
+                            .frame(height: 22)
+                            .overlay(Capsule().strokeBorder(AppColor.fieldBorder, lineWidth: 1))
+                    }
+                    Text(formula)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let mnemonic = item.mnemonic {
+                        Text(mnemonic)
+                            .font(.footnote)
+                            .foregroundStyle(AppColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else {
+                    // Ghi chú không đúng mẫu "Bố cục [công thức] …": hiện nguyên văn.
+                    Text(item.note)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Chữ \(item.character): \(item.note)")
+    }
+}

@@ -21,6 +21,8 @@ struct VocabWord: Identifiable, Hashable, Sendable {
     var usageNote: String?
     var characters: [HanVietCharacter] = []
     var examples: [VocabExample] = []
+    /// Chiết tự từng chữ (tách bộ phận + cách nhớ).
+    var decomposition: [CharacterDecomposition] = []
     var audioURL: URL?
     var hasDetail = true
 }
@@ -29,6 +31,50 @@ struct HanVietCharacter: Hashable, Sendable {
     let hanzi: String
     let reading: String
     let meaning: String
+}
+
+/// Chiết tự một chữ. Server trả một câu ghi chú, ví dụ
+/// "Trái/phải [亻 (người) + 木 (cây)] Gợi nhớ một người tựa vào cây để nghỉ.":
+/// tách thành bố cục ("Trái/phải"), công thức ("亻 (người) + 木 (cây)") và câu gợi nhớ.
+struct CharacterDecomposition: Hashable, Sendable {
+    let character: String
+    /// Ghi chú gốc của server, dùng khi không tách được.
+    let note: String
+    let layout: String?
+    let formula: String?
+    let mnemonic: String?
+
+    init(character: String, note: String) {
+        self.character = character
+        self.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = Self.parse(self.note)
+        layout = parts?.layout
+        formula = parts?.formula
+        mnemonic = parts?.mnemonic
+    }
+
+    /// Tách "Bố cục [công thức] Gợi nhớ" theo cặp ngoặc vuông ngoài cùng (công thức có thể lồng ngoặc).
+    static func parse(_ note: String) -> (layout: String?, formula: String, mnemonic: String?)? {
+        guard let open = note.firstIndex(of: "[") else { return nil }
+        var depth = 0
+        var close: String.Index?
+        for index in note[open...].indices {
+            switch note[index] {
+            case "[": depth += 1
+            case "]":
+                depth -= 1
+                if depth == 0 { close = index }
+            default: break
+            }
+            if close != nil { break }
+        }
+        guard let close else { return nil }
+        let layout = note[..<open].trimmingCharacters(in: .whitespaces)
+        let formula = note[note.index(after: open)..<close].trimmingCharacters(in: .whitespaces)
+        let mnemonic = note[note.index(after: close)...].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !formula.isEmpty else { return nil }
+        return (layout.isEmpty ? nil : layout, formula, mnemonic.isEmpty ? nil : mnemonic)
+    }
 }
 
 struct VocabExample: Hashable, Sendable {

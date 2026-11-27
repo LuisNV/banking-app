@@ -76,6 +76,7 @@ struct HSKWordDetailDTO: Decodable, Equatable {
     let wordType: String?
     let usageNote: String?
     let examples: [HSKExampleDTO]?
+    let decomposition: [HSKDecompositionDTO]?
 
     func toDomain(audioBaseURL: URL) -> VocabEntry {
         VocabEntry(
@@ -93,11 +94,25 @@ struct HSKWordDetailDTO: Decodable, Equatable {
                 examples: (examples ?? []).map {
                     VocabExample(hanzi: $0.sentenceZh, pinyin: $0.pinyin ?? "", meaning: $0.translationVi ?? "", note: $0.note.nonEmpty)
                 },
+                decomposition: HSKDecompositionDTO.toDomain(decomposition),
                 audioURL: HSKVocabularyMapping.audioURL(audioUrl, base: audioBaseURL),
                 hasDetail: true
             ),
             status: HSKVocabularyMapping.status(status)
         )
+    }
+}
+
+struct HSKDecompositionDTO: Decodable, Equatable {
+    let character: String
+    let noteVi: String?
+
+    /// Bỏ chữ không có ghi chú.
+    static func toDomain(_ items: [HSKDecompositionDTO]?) -> [CharacterDecomposition] {
+        (items ?? []).compactMap { item in
+            guard let note = item.noteVi.nonEmpty else { return nil }
+            return CharacterDecomposition(character: item.character, note: note)
+        }
     }
 }
 
@@ -213,6 +228,7 @@ struct HSKFlashcardItemDTO: Decodable, Equatable {
     let hanViet: String?
     let wordType: String?
     let example: HSKExampleDTO?
+    let decomposition: [HSKDecompositionDTO]?
 
     func toDomain(level: Int, audioBaseURL: URL) -> Flashcard {
         Flashcard(
@@ -228,6 +244,7 @@ struct HSKFlashcardItemDTO: Decodable, Equatable {
                 examples: example.map {
                     [VocabExample(hanzi: $0.sentenceZh, pinyin: $0.pinyin ?? "", meaning: $0.translationVi ?? "", note: $0.note.nonEmpty)]
                 } ?? [],
+                decomposition: HSKDecompositionDTO.toDomain(decomposition),
                 audioURL: HSKVocabularyMapping.audioURL(audioUrl, base: audioBaseURL),
                 // Thẻ chỉ có ví dụ đầu tiên, chưa có cách dùng: mở chi tiết sẽ tải đủ.
                 hasDetail: false

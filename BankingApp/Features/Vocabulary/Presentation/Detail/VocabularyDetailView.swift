@@ -98,6 +98,7 @@ struct VocabularyDetailView: View {
             }
         } else {
             if word.hanViet != nil { hanVietSection }
+            if !word.decomposition.isEmpty { decompositionSection }
             if let usageNote = word.usageNote { usageSection(usageNote) }
             if !word.examples.isEmpty { examplesSection }
         }
@@ -136,6 +137,18 @@ struct VocabularyDetailView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .outlinedSurface(cornerRadius: 22)
+        }
+    }
+
+    private var decompositionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Chiết tự")
+            GroupedCard {
+                ForEach(Array(viewModel.word.decomposition.enumerated()), id: \.offset) { offset, item in
+                    if offset > 0 { GroupedDivider(leadingInset: 14) }
+                    DecompositionRow(item: item)
+                }
+            }
         }
     }
 
