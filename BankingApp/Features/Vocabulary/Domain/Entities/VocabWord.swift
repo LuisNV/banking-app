@@ -33,24 +33,40 @@ struct HanVietCharacter: Hashable, Sendable {
     let meaning: String
 }
 
-/// Chiết tự một chữ. Server trả một câu ghi chú, ví dụ
-/// "Trái/phải [亻 (người) + 木 (cây)] Gợi nhớ một người tựa vào cây để nghỉ.":
-/// tách thành bố cục ("Trái/phải"), công thức ("亻 (người) + 木 (cây)") và câu gợi nhớ.
+/// Một bộ phận trong chữ, ví dụ 亻 "nhân" (người).
+struct DecompositionComponent: Hashable, Sendable {
+    let character: String
+    var hanViet: String?
+    var meaning: String?
+}
+
+/// Chiết tự một chữ: bộ phận ghép lại + câu gợi nhớ.
+/// Server mới trả `components`/`mnemonicVi`; server cũ chỉ có câu `noteVi`
+/// dạng "Trái/phải [亻 (người) + 木 (cây)] Gợi nhớ…" → tách bằng `fromNote`.
 struct CharacterDecomposition: Hashable, Sendable {
     let character: String
-    /// Ghi chú gốc của server, dùng khi không tách được.
-    let note: String
-    let layout: String?
-    let formula: String?
-    let mnemonic: String?
+    /// Âm Hán Việt của chữ ("nhĩ").
+    var hanViet: String?
+    /// "Trái/phải", "Trên/dưới"…
+    var layout: String?
+    var components: [DecompositionComponent] = []
+    /// Công thức dạng chữ ("亻 (người) + 尔 (ngươi)"), dùng khi không có `components`.
+    var formula: String?
+    var mnemonic: String?
+    /// Ghi chú gốc, hiện nguyên văn khi không có gì khác.
+    var note: String?
 
-    init(character: String, note: String) {
-        self.character = character
-        self.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let parts = Self.parse(self.note)
-        layout = parts?.layout
-        formula = parts?.formula
-        mnemonic = parts?.mnemonic
+    /// Từ câu ghi chú kiểu cũ.
+    static func fromNote(character: String, note: String) -> CharacterDecomposition {
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = parse(trimmed)
+        return CharacterDecomposition(
+            character: character,
+            layout: parts?.layout,
+            formula: parts?.formula,
+            mnemonic: parts?.mnemonic,
+            note: trimmed
+        )
     }
 
     /// Tách "Bố cục [công thức] Gợi nhớ" theo cặp ngoặc vuông ngoài cùng (công thức có thể lồng ngoặc).
@@ -74,6 +90,24 @@ struct CharacterDecomposition: Hashable, Sendable {
         let mnemonic = note[note.index(after: close)...].trimmingCharacters(in: .whitespacesAndNewlines)
         guard !formula.isEmpty else { return nil }
         return (layout.isEmpty ? nil : layout, formula, mnemonic.isEmpty ? nil : mnemonic)
+    }
+
+    /// Dòng gọn cho mặt sau thẻ: "爱 = 爫 + 冖 + 友".
+    var compactFormula: String? {
+        if !components.isEmpty { return components.map(\.character).joined(separator: " + ") }
+        return formula ?? note
+    }
+
+    /// Từ cần tô đậm trong câu gợi nhớ: nghĩa của các bộ phận và phần kết luận sau "→".
+    var mnemonicHighlights: [String] {
+        var words = components.compactMap(\.meaning).filter { !$0.isEmpty }
+        if let mnemonic, let arrow = mnemonic.range(of: "→") {
+            let conclusion = mnemonic[arrow.upperBound...]
+                .trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: ".!"))
+            words += conclusion.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        }
+        return words.filter { !$0.isEmpty }
     }
 }
 

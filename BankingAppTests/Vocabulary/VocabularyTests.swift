@@ -422,28 +422,28 @@ final class MockFlashcardDeckTests: XCTestCase {
 
 final class CharacterDecompositionTests: XCTestCase {
     func test_parse_layoutFormulaAndMnemonic() {
-        let item = CharacterDecomposition(character: "休", note: "Trái/phải [亻 (người) + 木 (cây)] Gợi nhớ một người tựa vào cây để nghỉ.")
+        let item = CharacterDecomposition.fromNote(character: "休", note: "Trái/phải [亻 (người) + 木 (cây)] Gợi nhớ một người tựa vào cây để nghỉ.")
         XCTAssertEqual(item.layout, "Trái/phải")
         XCTAssertEqual(item.formula, "亻 (người) + 木 (cây)")
         XCTAssertEqual(item.mnemonic, "Gợi nhớ một người tựa vào cây để nghỉ.")
     }
 
     func test_parse_withoutMnemonic() {
-        let item = CharacterDecomposition(character: "息", note: "Trên/dưới [自 + 心 (tim)]")
+        let item = CharacterDecomposition.fromNote(character: "息", note: "Trên/dưới [自 + 心 (tim)]")
         XCTAssertEqual(item.layout, "Trên/dưới")
         XCTAssertEqual(item.formula, "自 + 心 (tim)")
         XCTAssertNil(item.mnemonic)
     }
 
     func test_parse_nestedBrackets_keepsInnerGroup() {
-        let item = CharacterDecomposition(character: "爱", note: "Trên/dưới [trên/dưới [爫 + 冖] + 友]")
+        let item = CharacterDecomposition.fromNote(character: "爱", note: "Trên/dưới [trên/dưới [爫 + 冖] + 友]")
         XCTAssertEqual(item.layout, "Trên/dưới")
         XCTAssertEqual(item.formula, "trên/dưới [爫 + 冖] + 友")
         XCTAssertNil(item.mnemonic)
     }
 
     func test_parse_unexpectedFormat_fallsBackToNote() {
-        let item = CharacterDecomposition(character: "一", note: "Chữ tượng hình, một nét ngang.")
+        let item = CharacterDecomposition.fromNote(character: "一", note: "Chữ tượng hình, một nét ngang.")
         XCTAssertNil(item.formula)
         XCTAssertEqual(item.note, "Chữ tượng hình, một nét ngang.")
         XCTAssertNil(CharacterDecomposition.parse("Thiếu ngoặc đóng [亻 + 木"))
@@ -480,5 +480,49 @@ final class CharacterDecompositionTests: XCTestCase {
         let oldJSON = deckJSON.replacingOccurrences(of: #","decomposition":[{"character":"爱","noteVi":"Trên/dưới [trên/dưới [爫 + 冖] + 友]"}]"#, with: "")
         let old = try XCTUnwrap(decoder.decode(APIResponse<HSKFlashcardDeckDTO>.self, from: Data(oldJSON.utf8)).data)
         XCTAssertNil(old.items.first?.decomposition)
+    }
+}
+
+final class StructuredDecompositionTests: XCTestCase {
+    func test_decode_structuredDecomposition() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let json = """
+        {"code":0,"httpStatus":200,"message":"OK","traceId":"t","data":{"level":1,"items":[
+          {"entryNumber":1,"hanzi":"爱","pinyin":"ài","meaningVi":"yêu","audioUrl":null,"status":"NOT_STARTED","reason":"NEW",
+           "hanViet":"ái","wordType":"Động từ","example":null,
+           "decomposition":[{"character":"爱","hanViet":"ái","layoutVi":"Trên/dưới",
+             "components":[{"character":"爫","hanViet":"trảo","meaningVi":"bàn tay hướng xuống"},
+                           {"character":"冖","hanViet":"mịch","meaningVi":"mái che"},
+                           {"character":"友","hanViet":"hữu","meaningVi":"bạn"}],
+             "mnemonicVi":"Một bàn tay che trên đầu bạn khi trời mưa → yêu thương.",
+             "componentsVi":"爫 (bàn tay hướng xuống) + 冖 (mái che) + 友 (bạn)",
+             "noteVi":"Trên/dưới · 爫 (bàn tay hướng xuống) + 冖 (mái che) + 友 (bạn). Một bàn tay che trên đầu bạn khi trời mưa → yêu thương."}]}],
+          "dueCount":0,"newCount":300,"nextDueAt":null}}
+        """
+        let deck = try XCTUnwrap(decoder.decode(APIResponse<HSKFlashcardDeckDTO>.self, from: Data(json.utf8)).data)
+            .toDomain(audioBaseURL: URL(string: "http://localhost:8081/")!)
+        let item = try XCTUnwrap(deck.cards.first?.word.decomposition.first)
+
+        XCTAssertEqual(item.hanViet, "ái")
+        XCTAssertEqual(item.layout, "Trên/dưới")
+        XCTAssertEqual(item.components.map(\.character), ["爫", "冖", "友"])
+        XCTAssertEqual(item.components[0].hanViet, "trảo")
+        XCTAssertEqual(item.components[2].meaning, "bạn")
+        XCTAssertEqual(item.mnemonic, "Một bàn tay che trên đầu bạn khi trời mưa → yêu thương.")
+        XCTAssertEqual(item.compactFormula, "爫 + 冖 + 友")
+    }
+
+    func test_mnemonicHighlights_componentMeanings_andConclusion() {
+        let item = CharacterDecomposition(
+            character: "你", hanViet: "nhĩ", layout: "Trái/phải",
+            components: [.init(character: "亻", hanViet: "nhân", meaning: "người"),
+                         .init(character: "尔", hanViet: "nhĩ", meaning: "ngươi")],
+            mnemonic: "Người mà mình gọi là ngươi → bạn."
+        )
+        XCTAssertEqual(item.mnemonicHighlights, ["người", "ngươi", "bạn"])
+
+        let good = CharacterDecomposition(character: "好", mnemonic: "Mẹ bế con → điều tốt, hay.")
+        XCTAssertEqual(good.mnemonicHighlights, ["điều tốt", "hay"])
     }
 }

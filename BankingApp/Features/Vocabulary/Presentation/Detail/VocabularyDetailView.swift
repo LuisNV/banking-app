@@ -149,6 +149,10 @@ struct VocabularyDetailView: View {
                     DecompositionRow(item: item)
                 }
             }
+            Text("Cách nhớ theo bộ thủ, không phải nguồn gốc chữ chính xác tuyệt đối.")
+                .font(.footnote)
+                .foregroundStyle(AppColor.textSecondary)
+                .padding(.horizontal, 4)
         }
     }
 

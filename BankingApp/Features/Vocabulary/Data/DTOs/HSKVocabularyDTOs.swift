@@ -104,15 +104,44 @@ struct HSKWordDetailDTO: Decodable, Equatable {
 }
 
 struct HSKDecompositionDTO: Decodable, Equatable {
+    struct Component: Decodable, Equatable {
+        let character: String
+        let hanViet: String?
+        let meaningVi: String?
+    }
+
     let character: String
+    let hanViet: String?
+    let layoutVi: String?
+    let components: [Component]?
+    let mnemonicVi: String?
+    let componentsVi: String?
     let noteVi: String?
 
-    /// Bỏ chữ không có ghi chú.
-    static func toDomain(_ items: [HSKDecompositionDTO]?) -> [CharacterDecomposition] {
-        (items ?? []).compactMap { item in
-            guard let note = item.noteVi.nonEmpty else { return nil }
-            return CharacterDecomposition(character: item.character, note: note)
+    func toDomain() -> CharacterDecomposition? {
+        let parts = (components ?? []).map {
+            DecompositionComponent(character: $0.character, hanViet: $0.hanViet.nonEmpty, meaning: $0.meaningVi.nonEmpty)
         }
+        // Server cũ: chỉ có noteVi dạng "Bố cục [công thức] Gợi nhớ".
+        if parts.isEmpty, mnemonicVi.nonEmpty == nil, componentsVi.nonEmpty == nil {
+            guard let note = noteVi.nonEmpty else { return nil }
+            var item = CharacterDecomposition.fromNote(character: character, note: note)
+            item.hanViet = hanViet.nonEmpty
+            return item
+        }
+        return CharacterDecomposition(
+            character: character,
+            hanViet: hanViet.nonEmpty,
+            layout: layoutVi.nonEmpty,
+            components: parts,
+            formula: componentsVi.nonEmpty,
+            mnemonic: mnemonicVi.nonEmpty,
+            note: noteVi.nonEmpty
+        )
+    }
+
+    static func toDomain(_ items: [HSKDecompositionDTO]?) -> [CharacterDecomposition] {
+        (items ?? []).compactMap { $0.toDomain() }
     }
 }
 

@@ -118,19 +118,39 @@ extension Font {
     }
 }
 
-/// Một dòng chiết tự: ô chữ lớn, nhãn bố cục ("Trái/phải"), công thức bộ phận và câu gợi nhớ.
+/// Một dòng chiết tự: ô chữ lớn kèm âm Hán Việt, các bộ phận ghép bằng "+", câu gợi nhớ (tô đậm từ khóa).
 struct DecompositionRow: View {
     let item: CharacterDecomposition
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Text(item.character)
-                .font(.hanzi(32))
-                .frame(width: 52, height: 52)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(AppColor.brandTint))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                if let formula = item.formula {
+            VStack(spacing: 2) {
+                Text(item.character)
+                    .font(.hanzi(32))
+                    .frame(width: 52, height: 52)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(AppColor.brandTint))
+                if let hanViet = item.hanViet {
+                    Text(hanViet.capitalizedFirstLetter)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(AppColor.brand)
+                }
+            }
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                if !item.components.isEmpty {
+                    FlowLayout(spacing: 6) {
+                        ForEach(Array(item.components.enumerated()), id: \.offset) { offset, component in
+                            if offset > 0 {
+                                Text("+")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(AppColor.textTertiary)
+                                    .frame(height: 32)
+                            }
+                            ComponentChip(component: component)
+                        }
+                    }
+                } else if let formula = item.formula {
                     if let layout = item.layout {
                         Text(layout)
                             .font(.caption.weight(.semibold))
@@ -139,18 +159,15 @@ struct DecompositionRow: View {
                             .frame(height: 22)
                             .overlay(Capsule().strokeBorder(AppColor.fieldBorder, lineWidth: 1))
                     }
-                    Text(formula)
+                    Text(formula).font(.subheadline)
+                }
+
+                if let mnemonic = item.mnemonic {
+                    highlighted(mnemonic)
                         .font(.subheadline)
                         .fixedSize(horizontal: false, vertical: true)
-                    if let mnemonic = item.mnemonic {
-                        Text(mnemonic)
-                            .font(.footnote)
-                            .foregroundStyle(AppColor.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                } else {
-                    // Ghi chú không đúng mẫu "Bố cục [công thức] …": hiện nguyên văn.
-                    Text(item.note)
+                } else if item.components.isEmpty, item.formula == nil, let note = item.note {
+                    Text(note)
                         .font(.subheadline)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -159,7 +176,84 @@ struct DecompositionRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Chữ \(item.character): \(item.note)")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
+    }
+
+    /// Tô đậm nghĩa các bộ phận và phần kết luận sau "→" (chỉ khớp nguyên từ).
+    private func highlighted(_ text: String) -> Text {
+        var attributed = AttributedString(text)
+        let plain = text as NSString
+        for word in item.mnemonicHighlights {
+            var searchRange = NSRange(location: 0, length: plain.length)
+            while true {
+                let found = plain.range(of: word, options: [.caseInsensitive], range: searchRange)
+                guard found.location != NSNotFound else { break }
+                if isWholeWord(found, in: plain),
+                   let range = Range(found, in: text),
+                   let attributedRange = Range(range, in: attributed) {
+                    attributed[attributedRange].font = .subheadline.bold()
+                }
+                let next = found.location + found.length
+                searchRange = NSRange(location: next, length: plain.length - next)
+            }
+        }
+        return Text(attributed)
+    }
+
+    private func isWholeWord(_ range: NSRange, in text: NSString) -> Bool {
+        func isLetter(at index: Int) -> Bool {
+            guard index >= 0, index < text.length else { return false }
+            return CharacterSet.letters.contains(UnicodeScalar(text.character(at: index)) ?? " ")
+        }
+        return !isLetter(at: range.location - 1) && !isLetter(at: range.location + range.length)
+    }
+
+    private var accessibilityText: String {
+        var parts = ["Chữ \(item.character)"]
+        if let hanViet = item.hanViet { parts.append(hanViet) }
+        if !item.components.isEmpty {
+            parts.append(item.components.map { [$0.character, $0.hanViet, $0.meaning].compactMap { $0 }.joined(separator: " ") }
+                .joined(separator: " cộng "))
+        } else if let formula = item.formula {
+            parts.append(formula)
+        }
+        if let mnemonic = item.mnemonic { parts.append(mnemonic) } else if let note = item.note { parts.append(note) }
+        return parts.joined(separator: ", ")
+    }
+}
+
+/// Thẻ một bộ phận: chữ trong ô tròn nhỏ, tên Hán Việt đậm, nghĩa xám.
+private struct ComponentChip: View {
+    let component: DecompositionComponent
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(component.character)
+                .font(.hanzi(15, weight: .regular))
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(AppColor.fieldBackground))
+                .overlay(Circle().strokeBorder(AppColor.cardBorder, lineWidth: 1))
+            if let hanViet = component.hanViet {
+                Text(hanViet).font(.footnote.weight(.semibold))
+            }
+            if let meaning = component.meaning {
+                Text(meaning)
+                    .font(.footnote)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, 10)
+        .frame(height: 32)
+        .background(Capsule().fill(Color(hex: 0xF4F6F9)))
+    }
+}
+
+private extension String {
+    /// "nhĩ" → "Nhĩ".
+    var capitalizedFirstLetter: String {
+        guard let first else { return self }
+        return first.uppercased() + dropFirst()
     }
 }
