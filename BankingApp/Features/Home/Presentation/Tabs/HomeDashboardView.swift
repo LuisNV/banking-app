@@ -52,6 +52,8 @@ struct HomeDashboardView: View {
                 switch tool.kind {
                 case .hskVocabulary:
                     VocabularyListView()
+                case .pinyinChart:
+                    PinyinChartView()
                 default:
                     UtilityDetailPlaceholderView(item: tool.utilityItem)
                         .navigationTitle(tool.fullTitle)
