@@ -19,9 +19,12 @@ struct HomeView: View {
                 ComingSoonTabView(tab: viewModel.selectedTab)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // Thanh tab nổi phía trên nội dung (nội dung cuộn mờ phía sau). Mỗi tab tự chừa chỗ
+        // ở cuối danh sách bằng `.floatingTabBarInset()` để mục cuối không bị thanh tab che.
+        .overlay(alignment: .bottom) {
             if !viewModel.isTabBarHidden {
                 FloatingTabBar(selection: $viewModel.selectedTab)
+                    .padding(.bottom, FloatingTabBar.bottomPadding)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }

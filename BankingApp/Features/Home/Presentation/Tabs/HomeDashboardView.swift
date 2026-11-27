@@ -45,6 +45,8 @@ struct HomeDashboardView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 16)
             }
+            .refreshable { await viewModel.refreshHome() }
+            .floatingTabBarInset()
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: HomeTool.self) { tool in
                 switch tool.kind {

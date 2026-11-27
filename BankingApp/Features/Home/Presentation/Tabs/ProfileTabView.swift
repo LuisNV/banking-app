@@ -43,6 +43,7 @@ struct ProfileTabView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 24)
             }
+            .floatingTabBarInset()
             .navigationTitle("Cá nhân")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -328,6 +329,7 @@ struct ComingSoonTabView: View {
                 systemImage: tab.systemImage,
                 description: Text("Tính năng đang được phát triển.")
             )
+            .floatingTabBarInset()
             .navigationTitle(tab.title)
         }
     }

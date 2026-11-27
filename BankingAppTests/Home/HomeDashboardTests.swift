@@ -148,6 +148,21 @@ final class HomeDashboardTests: XCTestCase {
         XCTAssertEqual(pronunciation.spoken, ["牛"])
     }
 
+    func test_refreshHome_reloadsDashboardAndProfile_keepsOldDataOnError() async {
+        let sut = makeSUT()
+        await sut.loadDashboard()
+        await sut.loadProfile()
+        XCTAssertNotNil(sut.dashboard)
+        XCTAssertEqual(myProfile.callCount, 1)
+
+        // Kéo để làm mới khi mất mạng: hồ sơ được gọi lại, dashboard cũ vẫn giữ.
+        dashboardUseCase.result = .failure(URLError(.notConnectedToInternet))
+        await sut.refreshHome()
+
+        XCTAssertNotNil(sut.dashboard)
+        XCTAssertEqual(myProfile.callCount, 2)
+    }
+
     func test_loadProfile_updatesNameEmailAndAvatar() async {
         let sut = makeSUT()
 

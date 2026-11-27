@@ -127,14 +127,24 @@ final class HomeViewModel {
 
     // MARK: Actions
 
-    func loadDashboard() async {
-        guard dashboard == nil, !isLoadingDashboard else { return }
+    /// Tải dashboard và Từ của ngày. `force`: tải lại (kéo để làm mới); lỗi thì giữ dữ liệu đang hiện.
+    func loadDashboard(force: Bool = false) async {
+        guard force || dashboard == nil, !isLoadingDashboard else { return }
         isLoadingDashboard = true
         defer { isLoadingDashboard = false }
         async let dashboardResult = try? getDashboardUseCase.execute()
         async let wordResult = try? loadWordOfTheDay()
-        dashboard = await dashboardResult
-        wordOfTheDay = await wordResult
+        if let newDashboard = await dashboardResult { dashboard = newDashboard }
+        if let newWord = await wordResult { wordOfTheDay = newWord }
+    }
+
+    /// Kéo để làm mới Trang chủ: tải lại mọi thứ màn này đã gọi (dashboard, Từ của ngày,
+    /// hồ sơ cho lời chào/ảnh đại diện, cài đặt học cho mục tiêu mỗi ngày).
+    func refreshHome() async {
+        async let dashboardDone: Void = loadDashboard(force: true)
+        async let profileDone: Void = loadProfile(force: true)
+        async let settingsDone: Void = learningSettings.load(force: true)
+        _ = await (dashboardDone, profileDone, settingsDone)
     }
 
     /// Tải thông tin tài khoản. Mặc định chỉ tải một lần; `force` để tải lại (kéo để làm mới).

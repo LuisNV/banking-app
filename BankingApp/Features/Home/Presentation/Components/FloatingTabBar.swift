@@ -22,6 +22,12 @@ extension HomeViewModel.Tab {
 
 /// Thanh tab nổi dạng viên thuốc, nền mờ.
 struct FloatingTabBar: View {
+    static let height: CGFloat = 64
+    /// Khoảng cách từ thanh tab tới mép dưới vùng an toàn (thanh home của iPhone).
+    static let bottomPadding: CGFloat = 4
+    /// Phần cuối nội dung cần chừa để không bị thanh tab che (kèm một chút khoảng thở).
+    static let reservedHeight: CGFloat = height + bottomPadding + 12
+
     @Binding var selection: HomeViewModel.Tab
 
     var body: some View {
@@ -31,7 +37,7 @@ struct FloatingTabBar: View {
             }
         }
         .padding(4)
-        .frame(height: 64)
+        .frame(height: Self.height)
         .background(.regularMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(Color.black.opacity(0.06), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.06), radius: 3, y: 2)
@@ -63,5 +69,16 @@ struct FloatingTabBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+extension View {
+    /// Chừa chỗ cuối nội dung cuộn cho thanh tab nổi (gắn vào ScrollView/List của từng tab).
+    func floatingTabBarInset() -> some View {
+        safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear
+                .frame(height: FloatingTabBar.reservedHeight)
+                .allowsHitTesting(false)
+        }
     }
 }
